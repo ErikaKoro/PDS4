@@ -26,10 +26,10 @@ int main(int argc, char **argv){
             for(int i = 0; i < dimension; i++){
 
                 double coordinates = -100 + (rand() / div);
-                printf("%.10f ", coordinates);
+                // printf("%.10f ", coordinates);
                 fwrite(&coordinates, sizeof(double), 1, fh);
             }
-            printf("\n");
+            //printf("\n");
         }
         fclose (fh);
     }
