@@ -3,6 +3,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <sys/time.h>
+
+/**
+ * Calculates the elapse time
+ *
+ * @param begin the starting timestamp
+ * @param end the ending timestamp
+ * @return elapsed time in seconds
+ */
+double measureTime(struct timeval begin, struct timeval end) {
+    long seconds;
+    long microseconds;
+    double elapsed;
+
+    seconds = end.tv_sec - begin.tv_sec;
+    microseconds = end.tv_usec - begin.tv_usec;
+    elapsed = seconds + microseconds * 1e-6;
+
+    return elapsed;
+}
 
 
 /**
@@ -112,6 +132,16 @@ void freeMemory(vptree *tree) {
 }
 
 
+void testFunction(double const *distances, int64_t numberOfPoints){
+    for (int i = 1; i < numberOfPoints; ++i) {
+        if(distances[i - 1] > distances[i]){
+            printf("\nTest Failed\n");
+            return;
+        }
+    }
+    printf("Test passed\n\n");
+}
+
 int main(int argc, char **argv){
 
     if(argc != 2){
@@ -141,21 +171,18 @@ int main(int argc, char **argv){
 
         fclose (fh);
     }
+    printf("The dimension is %ld ", dimension);
 
-    printf("The array with the points is:\n\n");
-    for (int i = 0; i < numberOfPoints; ++i) {
-        for (int j = 0; j < dimension; ++j) {
-            printf("%.2f ", holdThePoints[i][j]);
-        }
-        printf("\n");
-    }
     printf("\n");
+
+    // Vars needed for execution time measurement
+    struct timeval begin, end;
+
     vptree initial;
     initial.inner = NULL;
     initial.outer = NULL;
     initial.start = 0;
     initial.stop = numberOfPoints - 1;
-    initial.vpIndex = numberOfPoints - 1;
 
     // Allocate memory for the vantage point and fill it with the last point's coordinates(random choice)
     initial.vpPoint = (double *)malloc(dimension * sizeof(double));     // FREEMEM
@@ -169,11 +196,40 @@ int main(int argc, char **argv){
     // Calculate the distances from the chosen pivot
     findDistance(distances, holdThePoints, dimension, initial.vpPoint, numberOfPoints);
 
-    buildVPTree(&initial, holdThePoints, distances, dimension, numberOfPoints);
+//    printf("The sort of the points is: \n");
+//    for (int i = 0; i < numberOfPoints; ++i) {
+//        for (int j = 0; j < dimension; ++j) {
+//            printf("%.2f ", holdThePoints[i][j]);
+//        }
+//        printf("\n");
+//    }
 
-    for (int i = 0; i < numberOfPoints; ++i) {
-        printf("The distance is %.10f\n", distances[i]);
-    }
+    gettimeofday(&begin, 0);
+    buildVPTree(&initial, holdThePoints, distances, dimension, numberOfPoints);
+    gettimeofday(&end,0);
+    printf("Time for tree construction: %.5f seconds.\n", measureTime(begin, end));
+    printf("The median distance is: %.2f ", initial.median);
+
+//    printf("The sort of the points is: \n");
+//    for (int i = 0; i < numberOfPoints; ++i) {
+//        for (int j = 0; j < dimension; ++j) {
+//            printf("%.2f ", holdThePoints[i][j]);
+//        }
+//        printf("\n");
+//    }
+
+//    printf("\n\nThe array with distances is:\n");
+//    for (int i = 0; i < numberOfPoints; ++i) {
+//        printf("%.2f ", distances[i]);
+//    }
+//    printf("\n");
+
+    // Check if the array is sorted correctly
+    testFunction(distances, numberOfPoints);
+
+//    for (int i = 0; i < numberOfPoints; ++i) {
+//        printf("The distance is %.10f\n", distances[i]);
+//    }
 
     // Free memory SO AS NOT TO HAVE MEMORY LEAKS(I DON'T DO SUCH THINGS, A FRIEND TOLD ME)
     for (int i = 0; i < numberOfPoints; ++i) {

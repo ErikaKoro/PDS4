@@ -7,7 +7,6 @@ typedef struct vptree{
     int64_t stop;
     double *vpPoint;   // vantage point
     double median;     // the euclidean median distance from the vantage point
-    int64_t vpIndex;   // the index of the vantage point tree in the original set
     struct vptree *inner;   // vantage point subtrees
     struct vptree *outer;
 }vptree;

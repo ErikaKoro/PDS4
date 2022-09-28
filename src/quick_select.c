@@ -31,18 +31,12 @@ int64_t partition(double **points, double arr[], int64_t left, int64_t right){
     while (j < right){
         if(arr[j] < pivot){
             swap(&arr[i], &arr[j]);
-            double *tmp = points[i];
-            points[i] = points[j];
-            points[j] = tmp;
             i++;
         }
         j++;
     }
 
     swap(&arr[i], &arr[right]);
-    double *temp = points[i];
-    points[i] = points[right];
-    points[right] = temp;
 
     return i;
 }
@@ -57,13 +51,10 @@ int64_t partition(double **points, double arr[], int64_t left, int64_t right){
  */
 int64_t randomPartition(double **points, double arr[], int64_t left, int64_t right){
     srand(time(NULL));
-    int length = right - left + 1;
-    int pivot = rand() % length;
+    int64_t length = right - left + 1;
+    int64_t pivot = rand() % length;
 
     swap(&arr[left + pivot], &arr[right]);
-    double *temp = points[left + pivot];
-    points[left + pivot] = points[right];
-    points[right] = temp;
 
     return partition(points, arr, left, right);
 }
