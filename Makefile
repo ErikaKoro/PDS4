@@ -22,9 +22,9 @@ cilk_vptree:
 
 build_knn:
 	@mkdir -p build
-	$(CC) $(CFLAGS) -c ./src/sequential_knn.c -o ./build/sequential_knn.o
+	$(CC) $(CFLAGS) -c ./src/KNNSearch.c -o ./build/KNNSearch.o
 	$(CC) $(CFLAGS) -c ./src/quick_select.c -o ./build/quick_select.o
-	$(CC) $(CFLAGS) -o ./build/sequential_knn.out ./build/quick_select.o ./build/sequential_knn.o
+	$(CC) $(CFLAGS) -o ./build/KNNSearch.out ./build/quick_select.o ./build/KNNSearch.o
 
 .PHONY: clean
 
@@ -40,7 +40,7 @@ run_cilk_vptree: cilk_vptree
 	./build/cilk_vptree.out ./src/data
 
 run_knn: build_knn
-	./build/sequential_knn.out ./src/data 4
+	./build/KNNSearch.out ./src/data 5
 
 clean:
 	rm -rf ./build/*.out
