@@ -1,4 +1,3 @@
-#include "KNNSearch.h"
 #include "sequential_vptree.h"
 #include "quick_select.h"
 #include <stdio.h>
@@ -6,6 +5,9 @@
 #include <inttypes.h>
 #include <sys/time.h>
 
+typedef struct knn{
+    double **nearest;
+}KNN;
 
 /**
  * Calculates the elapse time
@@ -36,14 +38,15 @@ double measureTime(struct timeval begin, struct timeval end) {
  * @param pivot array with the coordinates of the pivot
  * @param pointsPerProc
  */
-void findDistance(double *dist, double **points, int64_t dimension, const double *pivot, int64_t numberOfPoints){
+double *findDistance(double *dist, double **points, int64_t dimension, const double *pivot, int64_t numberOfPoints){
 
     for (int i = 0; i < numberOfPoints; ++i) {
         for (int j = 0; j < dimension; ++j) {
             dist[i] += (points[i][j] - pivot[j]) * (points[i][j] - pivot[j]);
         }
-//        printf("The distance is %.10f\n", dist[i]);
+        // printf("The distance is %.10f\n", dist[i]);
     }
+    return dist;
 }
 
 
@@ -108,7 +111,7 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
 void freeMemory(vptree *tree) {
 
     if (tree->inner == NULL && tree->outer == NULL) {        // If the tree's leaves are empty
-        free(tree);
+        free(tree);     // free the tree
         return;
     }
 
@@ -133,7 +136,28 @@ void freeMemory(vptree *tree) {
 
 }
 
+/**
+ * This function testes whether the sort of the distances is right after the call of the buildVPTree function
+ * @param distances
+ * @param numberOfPoints
+ */
+void testFunction(double const *distances, int64_t numberOfPoints){
+    for (int i = 1; i < numberOfPoints; ++i) {
+        if(distances[i - 1] > distances[i]){
+            printf("\nTest Failed\n");
+            return;
+        }
+    }
+    // printf("Test passed\n\n");
+}
 
+/**
+ * This function copies one array to another
+ * @param points The array that need to be copied
+ * @param copied The array where the other arrays is copied to
+ * @param numberOfPoints The number of array's rows
+ * @param dimension The number of array's cols
+ */
 void deepCopyArray(double **points, double **copied, int64_t numberOfPoints, int64_t dimension){
 
     for (int i = 0; i < numberOfPoints; ++i) {
@@ -152,27 +176,47 @@ void deepCopyArray(double **points, double **copied, int64_t numberOfPoints, int
  * @param points The array with all the points but sorted
  * @param numberOfPoints
  */
-void knn_search(int k, double *nearest, double **points, int64_t numberOfPoints, int64_t dimension){
-
+void knn_search(int k, double **nearest, double **points, int64_t numberOfPoints, int64_t dimension){
+    // The array points is sorted according to the sort of the array distances. So, when it is
+    // given as an argument the first k points of it are the nearest to the chosen point
     if(k < numberOfPoints) {
+        printf("\nThe nearest are: \n");
         for (int i = 0; i < k; ++i) {
-            nearest[i] = *points[i];
-            printf("\nThe nearest is: %.1f ", nearest[i]);
+            for (int j = 0; j < dimension; ++j) {
+                nearest[i][j] = points[i + 1][j];
+                printf("%.1f ", nearest[i][j]);
+            }
+            printf("\n");
         }
-    }else if(k == numberOfPoints || k > numberOfPoints){
+    }
+    else if(k == numberOfPoints || k > numberOfPoints){
+        printf("\nThe nearest are: \n");
         for (int i = 0; i < k; ++i) {
-            nearest[i] = *points[i];
+            for (int j = 0; j < dimension; ++j) {
+                if( i == numberOfPoints - 1)        // The points array has no more elements
+                    break;
+                nearest[i][j] = points[i + 1][j];
+                printf("%.1f ", nearest[i][j]);
+            }
+            printf("\n");
         }
     }
 }
 
-
+/**
+ * This function calculates for each point its distances from the others and sorts the distances array
+ * according to the median distance and finds its vantage tree
+ * @param dimension
+ * @param numberOfPoints
+ * @param k
+ * @param points
+ */
 void calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **points){
 
-    KNN *total = (KNN *)malloc(sizeof (KNN) * numberOfPoints);      // Create an object for each point
-    double **copied = (double **)malloc(sizeof (double *) * numberOfPoints);
+    KNN *total = (KNN *)malloc(sizeof (KNN) * numberOfPoints);      // Create an object for each point      // FREEMEM
+    double **copied = (double **)malloc(sizeof (double *) * numberOfPoints);        // FREEMEM
     for (int i = 0; i < numberOfPoints; ++i) {
-        copied[i] = (double *) malloc(sizeof (double ) * dimension);
+        copied[i] = (double *) malloc(sizeof (double ) * dimension);        // FREEMEM
     }
 
     // Copy all the points here(so as we can choose the correct vpPoint after the call of VPTree
@@ -181,7 +225,7 @@ void calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **poi
     // Now, for each point allocate memory for its array with the neighbours
     for (int i = 0; i < numberOfPoints; ++i) {      // for all points, their k neighbours need to be calculated
 
-        vptree *initial = (vptree *) malloc(sizeof (vptree) * numberOfPoints);
+        vptree *initial = (vptree *) malloc(sizeof (vptree) * numberOfPoints);      // FREEMEM
         initial->inner = NULL;
         initial->outer = NULL;
         initial->start = 0;
@@ -203,10 +247,29 @@ void calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **poi
         double *distances = (double *)calloc(numberOfPoints, sizeof(double ));     // FREEMEM
 
         // Calculate the distances from the chosen pivot
-        findDistance(distances, points, dimension, initial->vpPoint, numberOfPoints);
+        distances = findDistance(distances, points, dimension, initial->vpPoint, numberOfPoints);
+
 
         buildVPTree(initial, points, distances, dimension, numberOfPoints);
-        printf("I MADE IT OVER HERE TOO!!\n\n");
+
+
+        testFunction(distances, numberOfPoints);
+
+//        printf("The sorted distances are: \n");
+//        for (int j = 0; j < numberOfPoints; ++j) {
+//            printf("%.1f ", distances[j]);
+//        }
+//        printf("\n\n");
+//
+//        printf("The sorted points are: \n");
+//        for (int j = 0; j < numberOfPoints; ++j) {
+//            for (int l = 0; l < dimension; ++l) {
+//                printf("%.1f ", points[j][l]);
+//            }
+//            printf("\n");
+//
+//        }
+
         knn_search(k, total[i].nearest, points, numberOfPoints, dimension);
 
         free(distances);
@@ -216,22 +279,13 @@ void calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **poi
 
 
     // FREE ME
+    free(total);
     for (int i = 0; i < numberOfPoints; ++i) {
         free(copied[i]);
     }
     free(copied);
 }
 
-
-void testFunction(double const *distances, int64_t numberOfPoints){
-    for (int i = 1; i < numberOfPoints; ++i) {
-        if(distances[i - 1] > distances[i]){
-            printf("\nTest Failed\n");
-            return;
-        }
-    }
-    printf("Test passed\n\n");
-}
 
 int main(int argc, char **argv){
 
@@ -264,34 +318,28 @@ int main(int argc, char **argv){
     }
     printf("The dimension is %ld ", dimension);
 
-//    printf("The array with the points is:\n\n");
+//    printf("\n\nThe array with the points is:\n\n");
 //    for (int i = 0; i < numberOfPoints; ++i) {
 //        for (int j = 0; j < dimension; ++j) {
 //            printf("%.2f ", holdThePoints[i][j]);
 //        }
 //        printf("\n");
 //    }
-    printf("\n");
+//    printf("\n");
 
     // Vars needed for execution time measurement
     struct timeval begin, end;
     int k = atoi(argv[2]);
 
+    gettimeofday(&begin, 0);
     calculateKNN(dimension, numberOfPoints, k, holdThePoints);
-    printf("I MADE IT HERE\n\n\n");
+    gettimeofday(&end, 0);
+    printf("Time for tree construction: %.5f seconds.\n", measureTime(begin, end));
 
-    // Check if the array is sorted correctly
-    //testFunction(distances, numberOfPoints);
-
-//    for (int i = 0; i < numberOfPoints; ++i) {
-//        printf("The distance is %.10f\n", distances[i]);
-//    }
 
      // Free memory SO AS NOT TO HAVE MEMORY LEAKS(I DON'T DO SUCH THINGS, A FRIEND TOLD ME)
     for (int i = 0; i < numberOfPoints; ++i) {
         free(holdThePoints[i]);
     }
     free(holdThePoints);
-
-
 }

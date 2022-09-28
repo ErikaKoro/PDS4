@@ -21,11 +21,6 @@ add_executable(CILK
         src/cilk_vptree.c
         src/cilk_vptree.h)
 
-add_executable(KNN
-        src/quick_select.c
-        src/quick_select.h
-        )
-
 add_executable(KNN2
         src/quick_select.c
         src/quick_select.h
