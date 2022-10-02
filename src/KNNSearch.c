@@ -180,25 +180,25 @@ void knn_search(int k, double **nearest, double **points, int64_t numberOfPoints
     // The array points is sorted according to the sort of the array distances. So, when it is
     // given as an argument the first k points of it are the nearest to the chosen point
     if(k < numberOfPoints) {
-        printf("\nThe nearest are: \n");
+//        printf("\nThe nearest are: \n");
         for (int i = 0; i < k; ++i) {
             for (int j = 0; j < dimension; ++j) {
                 nearest[i][j] = points[i + 1][j];
-                printf("%.1f ", nearest[i][j]);
+//                printf("%.1f ", nearest[i][j]);
             }
-            printf("\n");
+//            printf("\n");
         }
     }
     else if(k == numberOfPoints || k > numberOfPoints){
-        printf("\nThe nearest are: \n");
+//        printf("\nThe nearest are: \n");
         for (int i = 0; i < k; ++i) {
             for (int j = 0; j < dimension; ++j) {
                 if( i == numberOfPoints - 1)        // The points array has no more elements
                     break;
                 nearest[i][j] = points[i + 1][j];
-                printf("%.1f ", nearest[i][j]);
+//                printf("%.1f ", nearest[i][j]);
             }
-            printf("\n");
+//            printf("\n");
         }
     }
 }
@@ -211,7 +211,7 @@ void knn_search(int k, double **nearest, double **points, int64_t numberOfPoints
  * @param k
  * @param points
  */
-void calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **points){
+KNN *calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **points){
 
     KNN *total = (KNN *)malloc(sizeof (KNN) * numberOfPoints);      // Create an object for each point      // FREEMEM
     double **copied = (double **)malloc(sizeof (double *) * numberOfPoints);        // FREEMEM
@@ -240,17 +240,17 @@ void calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **poi
         // Allocate memory for the vantage point and fill it with the last point's coordinates(random choice)
         initial->vpPoint = (double *)malloc(dimension * sizeof(double));     // FREEMEM
         for (int j = 0; j < dimension; ++j) {
-            initial->vpPoint[j] = copied[i][j];
+            initial->vpPoint[j] = points[i][j];
         }
 
         // Allocate the array that will hold the distances from the vantage point to the others
         double *distances = (double *)calloc(numberOfPoints, sizeof(double ));     // FREEMEM
 
         // Calculate the distances from the chosen pivot
-        distances = findDistance(distances, points, dimension, initial->vpPoint, numberOfPoints);
+        distances = findDistance(distances, copied, dimension, initial->vpPoint, numberOfPoints);
 
 
-        buildVPTree(initial, points, distances, dimension, numberOfPoints);
+        buildVPTree(initial, copied, distances, dimension, numberOfPoints);
 
 
         testFunction(distances, numberOfPoints);
@@ -270,7 +270,7 @@ void calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **poi
 //
 //        }
 
-        knn_search(k, total[i].nearest, points, numberOfPoints, dimension);
+        knn_search(k, total[i].nearest, copied, numberOfPoints, dimension);
 
         free(distances);
         free(initial->vpPoint);
@@ -279,11 +279,12 @@ void calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **poi
 
 
     // FREE ME
-    free(total);
     for (int i = 0; i < numberOfPoints; ++i) {
         free(copied[i]);
     }
     free(copied);
+
+    return total;
 }
 
 
@@ -330,9 +331,10 @@ int main(int argc, char **argv){
     // Vars needed for execution time measurement
     struct timeval begin, end;
     int k = atoi(argv[2]);
+    KNN *neighbours;
 
     gettimeofday(&begin, 0);
-    calculateKNN(dimension, numberOfPoints, k, holdThePoints);
+    neighbours = calculateKNN(dimension, numberOfPoints, k, holdThePoints);
     gettimeofday(&end, 0);
     printf("Time for tree construction: %.5f seconds.\n", measureTime(begin, end));
 
@@ -342,4 +344,15 @@ int main(int argc, char **argv){
         free(holdThePoints[i]);
     }
     free(holdThePoints);
+    for (int l = 0; l < numberOfPoints; ++l) {
+        for (int j = 0; j < k; ++j) {
+            free(neighbours[l].nearest[j]);
+        }
+    }
+
+    for (int i = 0; i < numberOfPoints; ++i) {
+        free(neighbours[i].nearest);
+    }
+    free(neighbours);
+
 }

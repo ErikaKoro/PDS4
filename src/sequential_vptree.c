@@ -193,9 +193,11 @@ int main(int argc, char **argv){
     // Allocate the array that will hold the distances from the vantage point to the others
     double *distances = (double *)calloc(numberOfPoints, sizeof(double ));     // FREEMEM
 
+    gettimeofday(&begin, 0);
     // Calculate the distances from the chosen pivot
     findDistance(distances, holdThePoints, dimension, initial.vpPoint, numberOfPoints);
-
+    gettimeofday(&end,0);
+    printf("Time for distance calculation: %.5f seconds.\n", measureTime(begin, end));
 //    printf("The sort of the points is: \n");
 //    for (int i = 0; i < numberOfPoints; ++i) {
 //        for (int j = 0; j < dimension; ++j) {

@@ -1,6 +1,7 @@
 CFLAGS=-O3 -g
 CC=gcc
 CILKCC=/usr/local/OpenCilk-2.0.0-x86_64-Linux-Ubuntu-22.04/bin/clang
+MPICC=mpicc
 default: all
 
 vptree_build:
@@ -26,6 +27,13 @@ build_knn:
 	$(CC) $(CFLAGS) -c ./src/quick_select.c -o ./build/quick_select.o
 	$(CC) $(CFLAGS) -o ./build/KNNSearch.out ./build/quick_select.o ./build/KNNSearch.o
 
+build_mpi:
+	@mkdir -p build
+	$(MPICC) $(CFLAGS) -c ./src/mpi_knn.c -o ./build/mpi_knn.o
+	$(MPICC) $(CFLAGS) -c ./src/quick_select.c -o ./build/quick_select.o
+	$(MPICC) $(CFLAGS) -o ./build/mpi_knn.out ./build/mpi_knn.o ./build/quick_select.o -lm
+
+
 .PHONY: clean
 
 all: vptree_build
@@ -40,7 +48,12 @@ run_cilk_vptree: cilk_vptree
 	./build/cilk_vptree.out ./src/data
 
 run_knn: build_knn
-	./build/KNNSearch.out ./src/data 5
+	valgrind --leak-check=yes --track-origins=yes --log-file=check.rpt ./build/KNNSearch.out ./src/data 5
+
+run_mpi_knn: build_mpi
+	#mpirun -hostfile hosts  ./build/mpi_knn.out ./src/data
+	mpirun -np 4 ./build/mpi_knn.out ./src/data
+
 
 clean:
 	rm -rf ./build/*.out
