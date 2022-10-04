@@ -9,8 +9,8 @@ include_directories(src)
 add_executable(PDS4
         src/quick_select.c
         src/quick_select.h
-        src/sequential_vptree.c
-        src/sequential_vptree.h)
+        src/sequential/sequential_vptree.c
+        src/sequential/sequential_vptree.h)
 
 add_executable(data
         src/main.c)

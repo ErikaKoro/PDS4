@@ -11,4 +11,7 @@ typedef struct vptree{
     struct vptree *outer;
 }vptree;
 
+void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t dimension, int64_t numberOfPoints);
+
+
 #endif

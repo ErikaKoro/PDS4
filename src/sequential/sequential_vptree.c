@@ -1,4 +1,4 @@
-#include "sequential_vptree.h"
+#include "sequential/sequential_vptree.h"
 #include "quick_select.h"
 #include <stdio.h>
 #include <stdlib.h>

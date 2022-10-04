@@ -6,7 +6,7 @@ default: all
 
 vptree_build:
 	@mkdir -p build
-	$(CC) $(CFLAGS) -c ./src/sequential_vptree.c -o ./build/sequential_vptree.o
+	$(CC) $(CFLAGS) -c ./src/sequential/sequential_vptree.c -o ./build/sequential_vptree.o
 	$(CC) $(CFLAGS) -c ./src/quick_select.c -o ./build/quick_select.o
 	$(CC) $(CFLAGS) -o ./build/sequential_vptree.out ./build/quick_select.o ./build/sequential_vptree.o
 

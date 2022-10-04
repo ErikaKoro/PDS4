@@ -5,7 +5,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include "mpi_quick_select.h"
-
+#include "mpi_knn.h"
+#include "sequential/sequential_vptree.h"
 
 
 /**
@@ -192,6 +193,7 @@ int *findExchanges(int rank, int *counterReceiver, int worldSize, int master, MP
     }
 }
 
+
 /**
  * Finds the distance of each element, per process, from the pivot
  *
@@ -201,13 +203,12 @@ int *findExchanges(int rank, int *counterReceiver, int worldSize, int master, MP
  * @param pivot array with the coordinates of the pivot
  * @param pointsPerProc
  */
-void findDistance(int rank, double *dist, double **points, int dimension, const double *pivot, int pointsPerProc){
+void findDistance(double *dist, double **points, int dimension, const double *pivot, int pointsPerProc){
 
     for (int i = 0; i < pointsPerProc; ++i) {
         for (int j = 0; j < dimension; ++j) {
             dist[i] += (points[i][j] - pivot[j]) * (points[i][j] - pivot[j]);
         }
-        //printf("Rank: %d    The distance is %.10f\n", rank, dist[i]);
     }
 }
 
@@ -219,12 +220,11 @@ void findDistance(int rank, double *dist, double **points, int dimension, const 
  * @param rank
  * @param holdThePoints
  * @param pointsPerProc
- * @param dimension
  * @param distance
  * @param median
  * @return the counter of the points that will remain in the process
  */
-int partitionByMedian(int worldSize, int rank, double **holdThePoints, int pointsPerProc, int dimension, double *distance, double median){
+int partitionByMedian(int worldSize, int rank, double **holdThePoints, int pointsPerProc, double *distance, double median){
     int j = 0;
     int i = 0;
     while(j < pointsPerProc){
@@ -283,7 +283,7 @@ void testFunction(double **points, int pointsPerProc, int dimension, double *piv
 
     double *dist = (double *) malloc(pointsPerProc * sizeof (double));
 
-    findDistance(rank, dist, points, dimension, pivot, pointsPerProc);
+    findDistance(dist, points, dimension, pivot, pointsPerProc);
 
     double maxDist = dist[0];
     double minDist = dist[0];
@@ -336,7 +336,7 @@ void testFunction(double **points, int pointsPerProc, int dimension, double *piv
 }
 
 bool isPowerOfTwo(int64_t number){
-    return (ceil(log2(number)) == floor(log2(number)));
+    return (ceil(log2((double)number)) == floor(log2((double)number)));
 }
 
 
@@ -357,28 +357,39 @@ bool isPowerOfTwo(int64_t number){
  * @param communicator "holds" the processes with which the function will be called with, recursively
  */
 void distributeByMedian(double *pivot,int master, int rank, int dimension, double **holdPoints, int pointsPerProc, int worldSize, MPI_Comm communicator) {
-    double *distance = (double *) calloc(pointsPerProc,sizeof(double)); // for each point hold the squares of the subtractions      // FREEMEM
 
-    // Find the distance of each point of the process from the pivot point chosen by the master
-    findDistance(rank, distance, holdPoints, dimension, pivot, pointsPerProc);
+    double *distance = NULL;
+    if(rank != master) {
+        distance = (double *) calloc(pointsPerProc,sizeof(double)); // for each point hold the squares of the subtractions      // FREEMEM
 
-//    printf("\n\n\n");
-//    printf("The distances with rank %d", rank);
-//    for(int  i = 0; i < pointsPerProc; i++){
-//        printf("%.10f ", distance[i]);
-//    }
-//    printf("\n\n\n");
+        // Find the distance of each point of the process from the pivot point chosen by the master
+        findDistance(distance, holdPoints, dimension, pivot, pointsPerProc);
+    }
+
 
     //Allocate the master's buffer to hold the distances
     double *receiver = NULL;
     if (rank == master) {
-        receiver = (double *) malloc(sizeof(double) * worldSize * pointsPerProc);       // FREEMEM
+
+        // for the master process the array that will hold the distances is the receiver buffer
+        receiver = (double *) malloc(sizeof(double) * worldSize * pointsPerProc);       // FREEMEM (CHECK)
+
+        // Find the distance of each point of the process from the pivot point chosen by the master
+        findDistance(receiver, holdPoints, dimension, pivot, pointsPerProc);
     }
 
 
     //The master gathers from all the processes their points' distances from the pivot
-    MPI_Gather(distance, (int) pointsPerProc, MPI_DOUBLE, receiver, (int) pointsPerProc, MPI_DOUBLE, master,
-               communicator);
+    MPI_Gather(
+            distance,
+            (int) pointsPerProc,
+            MPI_DOUBLE,
+            receiver + pointsPerProc,
+            (int) pointsPerProc,
+            MPI_DOUBLE,
+            master,
+            communicator
+    );
 
     double median;
     if (rank == master) {
@@ -394,7 +405,7 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
 
     // Call the function which calculates how many points in each process will remain
     // Sort the array holdPoints by holding in the first indexes the points that will remain in the process and in the last indexes the ones that will be exchanged
-    int counter = partitionByMedian(worldSize, rank, holdPoints, pointsPerProc, dimension, distance, median);
+    int counter = partitionByMedian(worldSize, rank, holdPoints, pointsPerProc, receiver, median);
     int pointsToGive = pointsPerProc - counter;  // The number of points each process wants to give
 
 
@@ -402,6 +413,12 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
 
     // Give the number of points each process wants to exchange to the master
     MPI_Gather(&pointsToGive, 1, MPI_INT, counterReceiver, 1, MPI_INT, master, communicator);
+
+//    // DEALLOCATE
+//    if(rank == master)
+//        free(receiver);
+//    else
+//        free(distance);
 
 
     ///--------------------------------------------NUMBER OF EXCHANGES AND THE INFO ARRAY--------------------------------------------
@@ -411,11 +428,8 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
 
     // The function has different returns whether it is called by the master process or by the others
     // That's why we call it with this condition
-    if (rank != master) {
-        exchangePerProcess = findExchanges(rank, counterReceiver, worldSize, master, communicator,&numberOfExchanges);
-    } else {
-        exchangePerProcess = findExchanges(rank, counterReceiver, worldSize, master, communicator,&numberOfExchanges);
-    }
+    exchangePerProcess = findExchanges(rank, counterReceiver, worldSize, master, communicator,&numberOfExchanges);
+
 
 
     /// ----------------------------------------------------------EXCHANGES------------------------------------------------------
@@ -464,8 +478,34 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
 
     /// --------------------------------------------- Recursive call ---------------------------------------------
     // Termination condition
-    if(worldSize == 2)
+    if(worldSize == 2){
+
+        // REACHING THIS POINT MEANS THAT EACH PROCESS WITH RANK < WORLD SIZE / 2 HAS POINTS WITH DISTANCES FROM THE PIVOT
+        // SMALLER THAN MEDIAN AND PROCESSES WITH RANK > WORLD SIZE / 2 HAVE POINTS WITH DISTANCES > MEDIAN
+        // BUT, THIS DOESN'T MEAN THAT EACH PROCESS HAS ITS POINTS SORTED
+        /// SO, IN THIS PHASE THE SEQUENTIAL FUNCTION BUILD VP TREE IS CALLED SO AS TO SORT THE POINTS AND CREATE
+        /// THE BINARY TREE CORRECTLY
+
+        vptree initial;  // Each process creates its struct of vptree
+        initial.inner = NULL;
+        initial.outer = NULL;
+        initial.start = 0;
+        initial.stop = pointsPerProc - 1;
+
+        if(rank != master) {
+            buildVPTree(&initial, holdPoints, distance, dimension, pointsPerProc);
+        }
+        else{
+            buildVPTree(&initial, holdPoints, receiver, dimension, pointsPerProc);
+        }
+
+        // Given that each process has created its tree, the master process concatenates them to create the binary tree
+        // each process sends its tree to the master
+
         return;
+    }
+
+
 
     //else
     MPI_Comm smallDistComm; // Define the new communicator after splitting the current worldSize in two for the recursive call
@@ -497,6 +537,8 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
 
         free(requests);
         free(exchangePerProcess);
+
+
         distributeByMedian(pivot, 0, rank, dimension, holdPoints, pointsPerProc, worldSize, bigDistComm);
 
     }
@@ -506,6 +548,7 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
 int main(int argc, char **argv) {
     int size;
     int rank;
+    vptree initial;
 
 
     MPI_Init(&argc, &argv);
@@ -559,19 +602,21 @@ int main(int argc, char **argv) {
 
             fread(x2, sizeof(double), dimension, fh);
             holdThePoints[i] = x2;
-            free(x2);
         }
         fclose(fh);
 
-
-        double *pivot = (double *) calloc(dimension, sizeof(double));       // FREEMEM (CHECK)
+        initial.inner = NULL;
+        initial.outer = NULL;
+        initial.start = 0;
+        initial.stop = numberOfPoints - 1;
+        initial.vpPoint = (double *) calloc(dimension, sizeof(double));
 
 
         // The master process chooses one pivot and broadcasts it to the other processes
         if(rank == 0) {
             //printf("The pivot is: ");
             for (int j = 0; j < dimension; j++) {
-                pivot[j] = holdThePoints[0][j];
+                initial.vpPoint[j] = holdThePoints[0][j];
                 //printf("%.10f ", pivot[j]);
             }
             //putchar('\n');
@@ -583,8 +628,8 @@ int main(int argc, char **argv) {
             start = MPI_Wtime();
         }
         //Broadcast the pivot to the processes
-        MPI_Bcast(pivot, (int)dimension, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        distributeByMedian(pivot, 0, rank, (int)dimension, holdThePoints, (int)pointsPerProc, size, MPI_COMM_WORLD);
+        MPI_Bcast(initial.vpPoint, (int)dimension, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        distributeByMedian(initial.vpPoint, 0, rank, (int)dimension, holdThePoints, (int)pointsPerProc, size, MPI_COMM_WORLD);
 
 
         if(rank == 0){
@@ -592,9 +637,9 @@ int main(int argc, char **argv) {
             printf("The time is: %.4f\n", end - start);
         }
 
-        testFunction(holdThePoints, (int)pointsPerProc, (int)dimension, pivot);
+        testFunction(holdThePoints, (int)pointsPerProc, (int)dimension, initial.vpPoint);
 
-        free(pivot);
+        free(initial.vpPoint);
     }
 
 
