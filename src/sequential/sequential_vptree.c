@@ -1,9 +1,10 @@
-#include "sequential/sequential_vptree.h"
-#include "quick_select.h"
+#include "sequential_vptree.h"
+#include "../quick_select.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include <sys/time.h>
+#include "../timer.h"
 
 /**
  * Calculates the elapse time
@@ -193,11 +194,16 @@ int main(int argc, char **argv){
     // Allocate the array that will hold the distances from the vantage point to the others
     double *distances = (double *)calloc(numberOfPoints, sizeof(double ));     // FREEMEM
 
-    gettimeofday(&begin, 0);
+    Timer timer;
+    startTimer(&timer);
+    //gettimeofday(&begin, 0);
     // Calculate the distances from the chosen pivot
     findDistance(distances, holdThePoints, dimension, initial.vpPoint, numberOfPoints);
-    gettimeofday(&end,0);
-    printf("Time for distance calculation: %.5f seconds.\n", measureTime(begin, end));
+    stopTimer(&timer);
+    printf("Distance elapsed time:\n");
+    displayElapsed(&timer);
+    //gettimeofday(&end,0);
+    //printf("Time for distance calculation: %.5f seconds.\n", measureTime(begin, end));
 //    printf("The sort of the points is: \n");
 //    for (int i = 0; i < numberOfPoints; ++i) {
 //        for (int j = 0; j < dimension; ++j) {
@@ -206,10 +212,14 @@ int main(int argc, char **argv){
 //        printf("\n");
 //    }
 
-    gettimeofday(&begin, 0);
+    //gettimeofday(&begin, 0);
+    startTimer(&timer);
     buildVPTree(&initial, holdThePoints, distances, dimension, numberOfPoints);
-    gettimeofday(&end,0);
-    printf("Time for tree construction: %.5f seconds.\n", measureTime(begin, end));
+    stopTimer(&timer);
+    printf("Distance elapsed time:\n");
+    displayElapsed(&timer);
+    //gettimeofday(&end,0);
+//    printf("Time for tree construction: %.5f seconds.\n", measureTime(begin, end));
     printf("The median distance is: %.2f ", initial.median);
 
 //    printf("The sort of the points is: \n");

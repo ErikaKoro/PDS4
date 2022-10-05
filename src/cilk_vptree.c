@@ -1,15 +1,32 @@
-#include "mpi_vptree.h"
+#include "cilk_vptree.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <mpi.h>
+#include <cilk/cilk.h>
+#include <cilk/cilk_api.h>
 #include <string.h>
-#include <stdbool.h>
 #include <inttypes.h>
-#include <sys/time.h>
 #include "quick_select.h"
+#include "timer.h"
 
+#define LIM 1000000/10000000
+/**
+ * Calculates the elapse time
+ *
+ * @param begin the starting timestamp
+ * @param end the ending timestamp
+ * @return elapsed time in seconds
+ */
+double measureTime(struct timeval begin, struct timeval end) {
+    long seconds;
+    long microseconds;
+    double elapsed;
 
+    seconds = end.tv_sec - begin.tv_sec;
+    microseconds = end.tv_usec - begin.tv_usec;
+    elapsed = seconds + microseconds * 1e-6;
 
+    return elapsed;
+}
 
 
 /**
@@ -21,16 +38,29 @@
  * @param pivot array with the coordinates of the pivot
  * @param pointsPerProc
  */
-void findDistance(double *dist, double **points, int64_t dimension, const double *pivot, int64_t numberOfPoints){
+void cilk_findDistance(double *dist, double **points, int64_t dimension, const double *pivot, int64_t numberOfPoints){
 
-    for (int i = 0; i < numberOfPoints; ++i) {
+#pragma grainsize 1000
+    cilk_for(int i = 0; i < numberOfPoints; ++i) {
         for (int j = 0; j < dimension; ++j) {
             dist[i] += (points[i][j] - pivot[j]) * (points[i][j] - pivot[j]);
         }
-//        printf("The distance is %.10f\n", dist[i]);
+//      printf("The distance is %.10f\n", dist[i]);
     }
 }
 
+
+void testFunction(double const *distances, int64_t numberOfPoints){
+    for (int i = 1; i < numberOfPoints; ++i) {
+        if(distances[i - 1] > distances[i]){
+            printf("\nTest Failed\n");
+            return;
+        }
+    }
+    printf("Test passed\n\n");
+}
+
+int spawn_counter = 0;
 
 /**
  * Builds the vantage point tree according to the median distance from the vantage point
@@ -44,7 +74,7 @@ void findDistance(double *dist, double **points, int64_t dimension, const double
 void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t dimension, int64_t numberOfPoints){
     // Condition that terminates the recursion
     if(numberOfPoints == 1)
-        return ;
+        return;
 
     // Find the median distance, using "quick select" algorithm
     // In findMedian we sort the array of points according to the sort of distances.
@@ -56,15 +86,6 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
     parentTree->inner->outer = NULL;
     parentTree->inner->start = parentTree->start;
     parentTree->inner->stop = numberOfPoints / 2 - 1 + parentTree->start;
-//    parentTree->inner->vpPoint = parentTree->vpPoint;
-
-    buildVPTree(
-            parentTree->inner,
-            points,
-            distances,
-            dimension,
-            parentTree->inner->stop - parentTree->inner->start + 1
-    );
 
 
     // Initialize outer tree
@@ -73,8 +94,55 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
     parentTree->outer->outer = NULL;
     parentTree->outer->start = numberOfPoints / 2 + parentTree->start;
     parentTree->outer->stop = parentTree->stop;
-//    parentTree->outer->vpPoint = parentTree->vpPoint;
 
+
+    /*if(parentTree->inner->stop - parentTree->inner->start + 1 >= LIM) {
+        spawn_counter++;
+        // begin scope of parallel region
+        cilk_spawn buildVPTree(
+                parentTree->inner,
+                points,
+                distances,
+                dimension,
+                parentTree->inner->stop - parentTree->inner->start + 1
+        );
+    }
+    else{
+        buildVPTree(
+                parentTree->inner,
+                points,
+                distances,
+                dimension,
+                parentTree->inner->stop - parentTree->inner->start + 1
+        );
+    }*/
+    cilk_spawn buildVPTree(
+    parentTree->inner,
+            points,
+            distances,
+            dimension,
+            parentTree->inner->stop - parentTree->inner->start + 1
+    );
+    /*if(parentTree->outer->stop - parentTree->outer->start + 1 >= LIM) {
+        spawn_counter++;
+        // May run in parallel with spawned function
+        cilk_spawn buildVPTree(
+                parentTree->outer,
+                points,
+                distances,
+                dimension,
+                parentTree->outer->stop - parentTree->outer->start + 1
+        );
+    }
+    else{
+        buildVPTree(
+                parentTree->outer,
+                points,
+                distances,
+                dimension,
+                parentTree->outer->stop - parentTree->outer->start + 1
+        );
+    }*/
     buildVPTree(
             parentTree->outer,
             points,
@@ -82,6 +150,7 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
             dimension,
             parentTree->outer->stop - parentTree->outer->start + 1
     );
+
 }
 
 
@@ -149,6 +218,8 @@ int main(int argc, char **argv){
         fclose (fh);
     }
 
+
+
 //    printf("The array with the points is:\n\n");
 //    for (int i = 0; i < numberOfPoints; ++i) {
 //        for (int j = 0; j < dimension; ++j) {
@@ -158,7 +229,7 @@ int main(int argc, char **argv){
 //    }
 
 
-
+    struct timeval begin, end;
 
     printf("\n");
     vptree initial;
@@ -177,17 +248,33 @@ int main(int argc, char **argv){
     // Allocate the array that will hold the distances from the vantage point to the others
     double *distances = (double *)calloc(numberOfPoints, sizeof(double ));     // FREEMEM
 
+    Timer timer;
+    // gettimeofday(&begin, 0);
     // Calculate the distances from the chosen pivot
-    findDistance(distances, holdThePoints, dimension, initial.vpPoint, numberOfPoints);
+    startTimer(&timer);
+    cilk_findDistance(distances, holdThePoints, dimension, initial.vpPoint, numberOfPoints);
+    stopTimer(&timer);
+    // gettimeofday(&end,0);
+    //printf("Time for distance calculation: %.5f seconds.\n", measureTime(begin, end));
+    printf("Distance elapsed time\n");
+    displayElapsed(&timer);
 
-    gettimeofday(&begin, 0);
-    buildVPTree(&initial, holdThePoints, distances, dimension, numberOfPoints);
-    gettimeofday(&end,0);
-    printf("Time for tree construction: %.5f seconds.\n", measureTime(begin, end));
-
-    for (int i = 0; i < numberOfPoints; ++i) {
-        printf("The distance is %.10f\n", distances[i]);
+    stopTimer(&timer);
+    //gettimeofday(&begin, 0);
+    cilk_scope {
+        buildVPTree(&initial, holdThePoints, distances, dimension, numberOfPoints);
     }
+    stopTimer(&timer);
+    printf("\n\nSpawned threads: %d\n\n", spawn_counter);
+    printf("Construction elapsed time\n");
+    displayElapsed(&timer);
+
+    testFunction(distances, numberOfPoints);
+    //gettimeofday(&end,0);
+    //printf("Time for tree construction: %.5f seconds.\n", measureTime(begin, end));
+//    for (int i = 0; i < numberOfPoints; ++i) {
+//        printf("The distance is %.10f\n", distances[i]);
+//    }
 
     // Free memory SO AS NOT TO HAVE MEMORY LEAKS(I DON'T DO SUCH THINGS, A FRIEND TOLD ME)
     for (int i = 0; i < numberOfPoints; ++i) {

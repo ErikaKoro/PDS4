@@ -8,7 +8,8 @@ vptree_build:
 	@mkdir -p build
 	$(CC) $(CFLAGS) -c ./src/sequential/sequential_vptree.c -o ./build/sequential_vptree.o
 	$(CC) $(CFLAGS) -c ./src/quick_select.c -o ./build/quick_select.o
-	$(CC) $(CFLAGS) -o ./build/sequential_vptree.out ./build/quick_select.o ./build/sequential_vptree.o
+	$(CC) $(CFLAGS) -c ./src/timer.c -o ./build/timer.o
+	$(CC) $(CFLAGS) -o ./build/sequential_vptree.out ./build/quick_select.o ./build/timer.o ./build/sequential_vptree.o
 
 build_quick_select:
 	@mkdir -p build
@@ -19,7 +20,8 @@ cilk_vptree:
 	@mkdir -p build
 	$(CILKCC) $(CFLAGS) -c ./src/cilk_vptree.c -o ./build/cilk_vptree.o -fopencilk
 	$(CILKCC) $(CFLAGS) -c ./src/quick_select.c -o ./build/quick_select.o -fopencilk
-	$(CILKCC) $(CFLAGS) -o ./build/cilk_vptree.out ./build/quick_select.o ./build/cilk_vptree.o -fopencilk
+	$(CILKCC) $(CFLAGS) -c ./src/timer.c -o ./build/timer.o -fopencilk
+	$(CILKCC) $(CFLAGS) -o ./build/cilk_vptree.out ./build/quick_select.o ./build/timer.o ./build/cilk_vptree.o -fopencilk #-fsanitize=cilk -Og
 
 build_knn:
 	@mkdir -p build
@@ -42,10 +44,10 @@ run_quick_select: build_quick_select
 	./build/quick_select.out
 
 run_vptree: vptree_build
-	valgrind --leak-check=yes --track-origins=yes --log-file=check.rpt ./build/sequential_vptree.out ./src/data
-
+	# valgrind --leak-check=yes --track-origins=yes --log-file=check.rpt ./build/sequential_vptree.out ./src/data
+	./build/sequential_vptree.out ./src/data
 run_cilk_vptree: cilk_vptree
-	./build/cilk_vptree.out ./src/data
+	./build/cilk_vptree.out ./src/data  #CILK_NWORKERS=16
 
 run_knn: build_knn
 	valgrind --leak-check=yes --track-origins=yes --log-file=check.rpt ./build/KNNSearch.out ./src/data 5

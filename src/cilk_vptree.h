@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <cilk/cilk.h>
 #ifndef PDS4_MPI_VPTREE_H
 #define PDS4_MPI_VPTREE_H
 

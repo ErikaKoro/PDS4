@@ -1,6 +1,6 @@
 #include "mpi_quick_select.h"
 #include <stdio.h>
-#include <time.h>
+#include <timer.h>
 #include <stdlib.h>
 
 

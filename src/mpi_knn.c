@@ -486,6 +486,10 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
         /// SO, IN THIS PHASE THE SEQUENTIAL FUNCTION BUILD VP TREE IS CALLED SO AS TO SORT THE POINTS AND CREATE
         /// THE BINARY TREE CORRECTLY
 
+        // Create the datatype
+        MPI_Datatype treePerProc;
+        int lengths
+
         vptree initial;  // Each process creates its struct of vptree
         initial.inner = NULL;
         initial.outer = NULL;
@@ -605,21 +609,16 @@ int main(int argc, char **argv) {
         }
         fclose(fh);
 
-        initial.inner = NULL;
-        initial.outer = NULL;
-        initial.start = 0;
-        initial.stop = numberOfPoints - 1;
-        initial.vpPoint = (double *) calloc(dimension, sizeof(double));
-
-
+        double *pivot;
         // The master process chooses one pivot and broadcasts it to the other processes
         if(rank == 0) {
-            //printf("The pivot is: ");
+            pivot = (double *)malloc(dimension * sizeof (double));
+            printf("The pivot is: ");
             for (int j = 0; j < dimension; j++) {
-                initial.vpPoint[j] = holdThePoints[0][j];
-                //printf("%.10f ", pivot[j]);
+                pivot[j] = holdThePoints[0][j];
+                printf("%.1f ", pivot[j]);
             }
-            //putchar('\n');
+            putchar('\n');
         }
 
 //        MPI_Barrier(MPI_COMM_WORLD);
@@ -628,8 +627,8 @@ int main(int argc, char **argv) {
             start = MPI_Wtime();
         }
         //Broadcast the pivot to the processes
-        MPI_Bcast(initial.vpPoint, (int)dimension, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        distributeByMedian(initial.vpPoint, 0, rank, (int)dimension, holdThePoints, (int)pointsPerProc, size, MPI_COMM_WORLD);
+        MPI_Bcast(pivot, (int)dimension, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        distributeByMedian(pivot, 0, rank, (int)dimension, holdThePoints, (int)pointsPerProc, size, MPI_COMM_WORLD);
 
 
         if(rank == 0){

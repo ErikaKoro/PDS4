@@ -2,7 +2,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
+#include <timer.h>
 
 int main(int argc, char **argv){
     if(argc != 4){

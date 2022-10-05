@@ -10,7 +10,8 @@ add_executable(PDS4
         src/quick_select.c
         src/quick_select.h
         src/sequential/sequential_vptree.c
-        src/sequential/sequential_vptree.h)
+        src/sequential/sequential_vptree.h
+        src/timer.c)
 
 add_executable(data
         src/main.c)
@@ -19,7 +20,8 @@ add_executable(CILK
         src/quick_select.c
         src/quick_select.h
         src/cilk_vptree.c
-        src/cilk_vptree.h)
+        src/cilk_vptree.h
+        src/timer.c)
 
 target_link_libraries(CILK -fopencilk)
 
@@ -39,3 +41,7 @@ target_link_libraries(MPI -lm)
 add_executable(Cilk_test src/cilk_test.c)
 
 target_link_libraries(Cilk_test -fopencilk)
+
+add_executable(TIME
+        src/timer.c
+        src/timer.h)
