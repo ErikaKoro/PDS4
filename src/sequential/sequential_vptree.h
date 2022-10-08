@@ -13,5 +13,6 @@ typedef struct vptree{
 
 void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t dimension, int64_t numberOfPoints);
 
+void testFunction(double const *distances, int64_t numberOfPoints);
 
 #endif

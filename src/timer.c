@@ -55,6 +55,7 @@ void startTimer(Timer *timer) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &timer->start);
 }
 
+
 /**
  * Store the stopping moment in the stop struct
  * @param timer  The timer struct
