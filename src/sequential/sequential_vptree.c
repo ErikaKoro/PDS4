@@ -143,6 +143,7 @@ void testFunction(double const *distances, int64_t numberOfPoints){
     printf("Test passed\n\n");
 }
 
+
 int main(int argc, char **argv){
 
     if(argc != 2){

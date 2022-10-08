@@ -14,13 +14,13 @@ add_executable(PDS4
         src/timer.c)
 
 add_executable(data
-        src/main.c)
+        src/Data/main.c)
 
 add_executable(CILK
         src/quick_select.c
         src/quick_select.h
-        src/cilk_vptree.c
-        src/cilk_vptree.h
+        src/cilk/cilk_vptree.c
+        src/cilk/cilk_vptree.h
         src/timer.c)
 
 target_link_libraries(CILK -fopencilk)
@@ -28,20 +28,12 @@ target_link_libraries(CILK -fopencilk)
 add_executable(KNN2
         src/quick_select.c
         src/quick_select.h
-        src/KNNSearch.c)
+        src/knn/KNNSearch.c)
 
 add_executable(MPI
-        src/mpi_knn.h
-        src/mpi_knn.c
-        src/mpi_quick_select.h
-        src/mpi_quick_select.c)
+        src/mpi/mpi_knn.c
+        src/mpi/mpi_quick_select.h
+        src/mpi/mpi_quick_select.c
+        src/mpi/mpi_tree.c)
 
 target_link_libraries(MPI -lm)
-
-add_executable(Cilk_test src/cilk_test.c)
-
-target_link_libraries(Cilk_test -fopencilk)
-
-add_executable(TIME
-        src/timer.c
-        src/timer.h)

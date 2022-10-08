@@ -8,7 +8,8 @@
 #include "quick_select.h"
 #include "timer.h"
 
-#define LIM 1000000/10000000
+#define LIM 5000000/1
+
 /**
  * Calculates the elapse time
  *
@@ -38,10 +39,13 @@ double measureTime(struct timeval begin, struct timeval end) {
  * @param pivot array with the coordinates of the pivot
  * @param pointsPerProc
  */
-void cilk_findDistance(double *dist, double **points, int64_t dimension, const double *pivot, int64_t numberOfPoints){
+void cilk_findDistance(double *dist, double **points, int64_t dimension, const double *pivot, int64_t numberOfPoints) {
 
 #pragma grainsize 1000
-    cilk_for(int i = 0; i < numberOfPoints; ++i) {
+    cilk_for(
+    int i = 0;
+    i < numberOfPoints;
+    ++i) {
         for (int j = 0; j < dimension; ++j) {
             dist[i] += (points[i][j] - pivot[j]) * (points[i][j] - pivot[j]);
         }
@@ -50,9 +54,9 @@ void cilk_findDistance(double *dist, double **points, int64_t dimension, const d
 }
 
 
-void testFunction(double const *distances, int64_t numberOfPoints){
+void testFunction(double const *distances, int64_t numberOfPoints) {
     for (int i = 1; i < numberOfPoints; ++i) {
-        if(distances[i - 1] > distances[i]){
+        if (distances[i - 1] > distances[i]) {
             printf("\nTest Failed\n");
             return;
         }
@@ -71,9 +75,9 @@ int spawn_counter = 0;
  * @param dimension The points' dimension
  * @param numberOfPoints The number of points
  */
-void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t dimension, int64_t numberOfPoints){
+void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t dimension, int64_t numberOfPoints) {
     // Condition that terminates the recursion
-    if(numberOfPoints == 1)
+    if (numberOfPoints == 1)
         return;
 
     // Find the median distance, using "quick select" algorithm
@@ -81,7 +85,7 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
     parentTree->median = findMedian(points + parentTree->start, distances + parentTree->start, numberOfPoints);
 
     // Initialize inner tree
-    parentTree->inner = (vptree *)malloc(sizeof (vptree));      // FREEMEM
+    parentTree->inner = (vptree *) malloc(sizeof(vptree));      // FREEMEM
     parentTree->inner->inner = NULL;
     parentTree->inner->outer = NULL;
     parentTree->inner->start = parentTree->start;
@@ -89,25 +93,24 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
 
 
     // Initialize outer tree
-    parentTree->outer = (vptree *)malloc(sizeof (vptree));      // FREEMEM
+    parentTree->outer = (vptree *) malloc(sizeof(vptree));      // FREEMEM
     parentTree->outer->inner = NULL;
     parentTree->outer->outer = NULL;
     parentTree->outer->start = numberOfPoints / 2 + parentTree->start;
     parentTree->outer->stop = parentTree->stop;
 
 
-    /*if(parentTree->inner->stop - parentTree->inner->start + 1 >= LIM) {
+    if (parentTree->inner->stop - parentTree->inner->start + 1 >= LIM) {
         spawn_counter++;
         // begin scope of parallel region
         cilk_spawn buildVPTree(
-                parentTree->inner,
+        parentTree->inner,
                 points,
                 distances,
                 dimension,
                 parentTree->inner->stop - parentTree->inner->start + 1
         );
-    }
-    else{
+    } else {
         buildVPTree(
                 parentTree->inner,
                 points,
@@ -115,34 +118,8 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
                 dimension,
                 parentTree->inner->stop - parentTree->inner->start + 1
         );
-    }*/
-    cilk_spawn buildVPTree(
-    parentTree->inner,
-            points,
-            distances,
-            dimension,
-            parentTree->inner->stop - parentTree->inner->start + 1
-    );
-    /*if(parentTree->outer->stop - parentTree->outer->start + 1 >= LIM) {
-        spawn_counter++;
-        // May run in parallel with spawned function
-        cilk_spawn buildVPTree(
-                parentTree->outer,
-                points,
-                distances,
-                dimension,
-                parentTree->outer->stop - parentTree->outer->start + 1
-        );
     }
-    else{
-        buildVPTree(
-                parentTree->outer,
-                points,
-                distances,
-                dimension,
-                parentTree->outer->stop - parentTree->outer->start + 1
-        );
-    }*/
+
     buildVPTree(
             parentTree->outer,
             points,
@@ -150,6 +127,26 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
             dimension,
             parentTree->outer->stop - parentTree->outer->start + 1
     );
+
+    /*if (parentTree->outer->stop - parentTree->outer->start + 1 >= LIM) {
+        spawn_counter++;
+        // May run in parallel with spawned function
+        cilk_spawn buildVPTree(
+        parentTree->outer,
+                points,
+                distances,
+                dimension,
+                parentTree->outer->stop - parentTree->outer->start + 1
+        );
+    } else {
+        buildVPTree(
+                parentTree->outer,
+                points,
+                distances,
+                dimension,
+                parentTree->outer->stop - parentTree->outer->start + 1
+        );
+    }*/
 
 }
 
@@ -169,28 +166,26 @@ void freeMemory(vptree *tree) {
     if (tree->inner == NULL) {
         freeMemory(tree->outer);
         tree->outer = NULL;
-    }
-    else if (tree->outer == NULL){
+    } else if (tree->outer == NULL) {
         freeMemory(tree->inner);
         tree->inner = NULL;
-    }
-    else {
+    } else {
         freeMemory(tree->inner);
         tree->inner = NULL;
         freeMemory(tree->outer);
         tree->outer = NULL;
     }
 
-    if(tree->inner == NULL && tree->outer == NULL) {        // If the tree's leaves are empty
+    if (tree->inner == NULL && tree->outer == NULL) {        // If the tree's leaves are empty
         free(tree);
     }
 
 }
 
 
-int main(int argc, char **argv){
+int main(int argc, char **argv) {
 
-    if(argc != 2){
+    if (argc != 2) {
         printf("gimme args you stupid\n");
         return -1;
     }
@@ -200,22 +195,22 @@ int main(int argc, char **argv){
     int64_t dimension;
     double **holdThePoints;
 
-    FILE *fh = fopen (argv[1], "rb");
+    FILE *fh = fopen(argv[1], "rb");
     if (fh != NULL) {
         fread(&dimension, sizeof(int64_t), 1, fh);
         fread(&numberOfPoints, sizeof(int64_t), 1, fh);
 
-        holdThePoints = (double **)malloc(sizeof(double *) * numberOfPoints);       // FREEMEM
+        holdThePoints = (double **) malloc(sizeof(double *) * numberOfPoints);       // FREEMEM
 
-        for(int i = 0; i < numberOfPoints; i++){
-            holdThePoints[i] = (double *) malloc(sizeof (double) * dimension);      // FREEMEM
+        for (int i = 0; i < numberOfPoints; i++) {
+            holdThePoints[i] = (double *) malloc(sizeof(double) * dimension);      // FREEMEM
         }
 
         for (int i = 0; i < numberOfPoints; i++) {
             fread(*(holdThePoints + i), sizeof(double), dimension, fh);
         }
 
-        fclose (fh);
+        fclose(fh);
     }
 
 
@@ -229,7 +224,7 @@ int main(int argc, char **argv){
 //    }
 
 
-    struct timeval begin, end;
+    //struct timeval begin, end;
 
     printf("\n");
     vptree initial;
@@ -240,13 +235,13 @@ int main(int argc, char **argv){
     initial.vpIndex = numberOfPoints - 1;
 
     // Allocate memory for the vantage point and fill it with the last point's coordinates(random choice)
-    initial.vpPoint = (double *)malloc(dimension * sizeof(double));     // FREEMEM
+    initial.vpPoint = (double *) malloc(dimension * sizeof(double));     // FREEMEM
     for (int i = 0; i < dimension; ++i) {
         initial.vpPoint[i] = holdThePoints[numberOfPoints - 1][i];
     }
 
     // Allocate the array that will hold the distances from the vantage point to the others
-    double *distances = (double *)calloc(numberOfPoints, sizeof(double ));     // FREEMEM
+    double *distances = (double *) calloc(numberOfPoints, sizeof(double));     // FREEMEM
 
     Timer timer;
     // gettimeofday(&begin, 0);
@@ -261,7 +256,8 @@ int main(int argc, char **argv){
 
     stopTimer(&timer);
     //gettimeofday(&begin, 0);
-    cilk_scope {
+    cilk_scope
+    {
         buildVPTree(&initial, holdThePoints, distances, dimension, numberOfPoints);
     }
     stopTimer(&timer);

@@ -1,62 +1,148 @@
-CFLAGS=-O3 -g
-CC=gcc
-CILKCC=/usr/local/OpenCilk-2.0.0-x86_64-Linux-Ubuntu-22.04/bin/clang
-MPICC=mpicc
-default: all
+CC = gcc
+MPICC = mpicc
+CILK = /usr/local/OpenCilk-2.0.0/bin/clang
 
-vptree_build:
-	@mkdir -p build
-	$(CC) $(CFLAGS) -c ./src/sequential/sequential_vptree.c -o ./build/sequential_vptree.o
-	$(CC) $(CFLAGS) -c ./src/quick_select.c -o ./build/quick_select.o
-	$(CC) $(CFLAGS) -c ./src/timer.c -o ./build/timer.o
-	$(CC) $(CFLAGS) -o ./build/sequential_vptree.out ./build/quick_select.o ./build/timer.o ./build/sequential_vptree.o
+BUILD_DIR := ./make-build-debug-g
+MPI_BUILD_DIR := ./make-build-debug-mpi
+CILK_BUILD_DIR := ./make-build-debug-cilk-20
+PROF_DIR := ./profiling
+SRC_DIRS := ./src
 
-build_quick_select:
-	@mkdir -p build
-	$(CC) $(CFLAGS) -c ./src/quick_select.c -o ./build/quick_select.o
-	$(CC) $(CFLAGS) -o ./build/quick_select.out ./build/quick_select.o
+# Colors
+GREEN = \033[1;32m
+RED = \033[1;31m
+NC = \033[0m
+BOLD = \033[1m
 
-cilk_vptree:
-	@mkdir -p build
-	$(CILKCC) $(CFLAGS) -c ./src/cilk_vptree.c -o ./build/cilk_vptree.o -fopencilk
-	$(CILKCC) $(CFLAGS) -c ./src/quick_select.c -o ./build/quick_select.o -fopencilk
-	$(CILKCC) $(CFLAGS) -c ./src/timer.c -o ./build/timer.o -fopencilk
-	$(CILKCC) $(CFLAGS) -o ./build/cilk_vptree.out ./build/quick_select.o ./build/timer.o ./build/cilk_vptree.o -fopencilk #-fsanitize=cilk -Og
+# Directories
+SERIAL_SRC := $(shell find $(SRC_DIRS)/sequential -name '*.c')
+SERIAL_SRC += $(shell find $(SRC_DIRS) -maxdepth 1 -name '*.c')
+SERIAL_SRC := $(SERIAL_SRC:%=$(BUILD_DIR)/%.o)
 
-build_knn:
-	@mkdir -p build
-	$(CC) $(CFLAGS) -c ./src/KNNSearch.c -o ./build/KNNSearch.o
-	$(CC) $(CFLAGS) -c ./src/quick_select.c -o ./build/quick_select.o
-	$(CC) $(CFLAGS) -o ./build/KNNSearch.out ./build/quick_select.o ./build/KNNSearch.o
+MPI_SRC := $(shell find $(SRC_DIRS)/mpi -name '*.c')
+MPI_SRC := $(MPI_SRC:%=$(MPI_BUILD_DIR)/%.o)
 
-build_mpi:
-	@mkdir -p build
-	$(MPICC) $(CFLAGS) -c ./src/mpi_knn.c -o ./build/mpi_knn.o
-	$(MPICC) $(CFLAGS) -c ./src/quick_select.c -o ./build/quick_select.o
-	$(MPICC) $(CFLAGS) -o ./build/mpi_knn.out ./build/mpi_knn.o ./build/quick_select.o -lm
+CILK_SRC := $(shell find $(SRC_DIRS)/cilk -name '*.c')
+CILK_SRC += $(shell find $(SRC_DIRS) -maxdepth 1 -name '*.c')
+CILK_SRC := $(CILK_SRC:%=$(CILK_BUILD_DIR)/%.o)
+
+KNN_SRC := $(shell find $(SRC_DIRS)/knn -name '*.c')
+KNN_SRC += $(shell find $(SRC_DIRS) -maxdepth 1 -name '*.c')
+KNN_SRC := $(KNN_SRC:%=$(BUILD_DIR)/%.o)
+
+# Every folder in ./src will need to be passed to GCC so that it can find header files
+INC_DIRS := $(shell find $(SRC_DIRS) -type d)
+
+# Add a prefix to INC_DIRS. So moduleA would become -ImoduleA. GCC understands this -I flag
+INC_FLAGS := $(addprefix -I,$(INC_DIRS))
+
+CC_FLAGS := $(INC_FLAGS) -O3 -g
+MPI_FLAGS := $(INC_FLAGS) -O3 -g -lm
+CILK_FLAGS := $(INC_FLAGS) -O3 -g -fopencilk # -fsanitize=cilk -Og -g
+
+all: build_sequential build_mpi build_cilk
+
+
+$(BUILD_DIR)/sequential.out: $(SERIAL_SRC)
+	@echo
+	@echo -e "        $(BOLD)Linking...$(NC)"
+	@echo
+	@$(CC) $(CC_FLAGS) -o $(BUILD_DIR)/sequential.out $(SERIAL_SRC)
+	@echo -e "    $(GREEN)Build finished successfully!$(NC)"
+	@echo
+
+$(BUILD_DIR)/knn.out: $(KNN_SRC)
+	@echo
+	@echo -e "        $(BOLD)Linking...$(NC)"
+	@echo
+	@$(CC) $(CC_FLAGS) -o $(BUILD_DIR)/knn.out $(KNN_SRC)
+	@echo -e "    $(GREEN)Build finished successfully!$(NC)"
+	@echo
+
+
+$(MPI_BUILD_DIR)/mpi.out: $(MPI_SRC)
+	@echo
+	@echo -e "        $(BOLD)Linking...$(NC)"
+	@echo
+	@$(MPICC) $(MPI_FLAGS) -o $(MPI_BUILD_DIR)/mpi.out $(MPI_SRC)
+	@echo -e "    $(GREEN)Build finished successfully!$(NC)"
+	@echo
+
+
+$(CILK_BUILD_DIR)/cilk.out: $(CILK_SRC)
+	@echo
+	@echo -e "        $(BOLD)Linking...$(NC)"
+	@echo
+	@$(CILK) $(CILK_FLAGS) -o $(CILK_BUILD_DIR)/cilk.out $(CILK_SRC)
+	@echo -e "    $(GREEN)Build finished successfully!$(NC)"
+	@echo
+
+
+$(BUILD_DIR)/%.c.o: %.c
+	@mkdir -p $(dir $@)
+	@echo -e "        $(BOLD)Compiling:$(NC) $(<)..."
+	@$(CC) $(CC_FLAGS) -c $< -o $@
+
+
+$(MPI_BUILD_DIR)/%.c.o: %.c
+	@mkdir -p $(dir $@)
+	@echo -e "        $(BOLD)Compiling:$(NC) $(<)..."
+	@$(MPICC) $(MPI_FLAGS) -c $< -o $@
+
+
+$(CILK_BUILD_DIR)/%.c.o: %.c
+	@mkdir -p $(dir $@)
+	@echo -e "        $(BOLD)Compiling:$(NC) $(<)..."
+	@$(CILK) $(CILK_FLAGS) -c $< -o $@
+
+%.c:
+
+
+build_sequential: $(BUILD_DIR)/sequential.out
+run_sequential: $(BUILD_DIR)/sequential.out
+	@echo
+	@echo
+	@$(BUILD_DIR)/sequential.out ./src/Data/data
+	@echo
+	@echo
+
+build_knn: $(BUILD_DIR)/knn.out
+run_knn: $(BUILD_DIR)/knn.out
+	@echo
+	@echo
+	@$(BUILD_DIR)/knn.out ./src/Data/data 1000
+	@echo
+	@echo
+
+build_mpi: $(MPI_BUILD_DIR)/mpi.out
+run_mpi: $(MPI_BUILD_DIR)/mpi.out
+	@echo
+	@echo
+	@mpirun -hostfile hosts $(MPI_BUILD_DIR)/mpi.out ./src/Data/data 4
+	@echo
+	@echo
+
+
+valgrind_mpi: $(MPI_BUILD_DIR)/mpi.out
+	@echo
+	@echo
+	@mpirun -np 2 valgrind $(MPI_BUILD_DIR)/mpi.out ./src/Data/data
+	@echo
+	@echo
+
+build_cilk: $(CILK_BUILD_DIR)/cilk.out
+run_cilk: $(CILK_BUILD_DIR)/cilk.out
+	@echo
+	@echo
+	@$(CILK_BUILD_DIR)/cilk.out ./src/Data/data
+	@echo
+	@echo
 
 
 .PHONY: clean
-
-all: vptree_build
-
-run_quick_select: build_quick_select
-	./build/quick_select.out
-
-run_vptree: vptree_build
-	# valgrind --leak-check=yes --track-origins=yes --log-file=check.rpt ./build/sequential_vptree.out ./src/data
-	./build/sequential_vptree.out ./src/data
-run_cilk_vptree: cilk_vptree
-	./build/cilk_vptree.out ./src/data  #CILK_NWORKERS=16
-
-run_knn: build_knn
-	valgrind --leak-check=yes --track-origins=yes --log-file=check.rpt ./build/KNNSearch.out ./src/data 5
-
-run_mpi_knn: build_mpi
-	#mpirun -hostfile hosts  ./build/mpi_knn.out ./src/data
-	mpirun -np 4 ./build/mpi_knn.out ./src/data
-
-
 clean:
-	rm -rf ./build/*.out
-	rm -rf ./build/*.o
+	@echo -e "$(RED)Clearing build directories...$(NC)"
+	@rm -rf $(BUILD_DIR)
+	@rm -rf $(CILK_BUILD_DIR)
+	@rm -rf $(MPI_BUILD_DIR)
+	@echo -e "$(GREEN)Done!$(NC)"
