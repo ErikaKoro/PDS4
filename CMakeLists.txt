@@ -37,3 +37,4 @@ add_executable(MPI
         src/mpi/mpi_tree.c)
 
 target_link_libraries(MPI -lm)
+

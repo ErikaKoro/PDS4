@@ -264,7 +264,7 @@ KNN *calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **poi
         initial->stop = numberOfPoints - 1;
 
         // ALLOCATE
-        total[i].nearest = (double **) malloc(sizeof(double) * k);      // for each point, each nearest array has k points
+        total[i].nearest = (double **) malloc(sizeof(double*) * k);      // for each point, each nearest array has k points
         for (int j = 0; j < k; ++j) {
             total[i].nearest[j] = (double *)malloc(sizeof (double ) * dimension);
         }
@@ -283,24 +283,6 @@ KNN *calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **poi
 
 
         buildVPTree(initial, copied, distances, dimension, numberOfPoints, k);
-
-
-        //mpi_function(distances, numberOfPoints);
-
-//        printf("The sorted distances are: \n");
-//        for (int j = 0; j < numberOfPoints; ++j) {
-//            printf("%.1f ", distances[j]);
-//        }
-//        printf("\n\n");
-//
-//        printf("The sorted points are: \n");
-//        for (int j = 0; j < numberOfPoints; ++j) {
-//            for (int l = 0; l < dimension; ++l) {
-//                printf("%.1f ", points[j][l]);
-//            }
-//            printf("\n");
-//
-//        }
 
         knn_search(k, total[i].nearest, copied, numberOfPoints, dimension);
 
@@ -351,14 +333,6 @@ int main(int argc, char **argv){
     }
     printf("The dimension is %ld ", dimension);
 
-//    printf("\n\nThe array with the points is:\n\n");
-//    for (int i = 0; i < numberOfPoints; ++i) {
-//        for (int j = 0; j < dimension; ++j) {
-//            printf("%.2f ", holdThePoints[i][j]);
-//        }
-//        printf("\n");
-//    }
-//    printf("\n");
 
     // Vars needed for execution time measurement
     struct timeval begin, end;

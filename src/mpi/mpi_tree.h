@@ -16,4 +16,8 @@ void findDistance(double *dist, double **points, int64_t dimension, const double
 
 void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t dimension, int64_t numberOfPoints);
 
+void knn_mpi_search(int k, double **nearest, double **points, int64_t numberOfPoints, int64_t dimension);
+
+void freeMpiMemory(vptree *tree);
+
 #endif //PDS4_MPI_TREE_H

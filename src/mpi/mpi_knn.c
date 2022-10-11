@@ -7,6 +7,9 @@
 #include "mpi_quick_select.h"
 #include "mpi_tree.h"
 
+typedef struct knn{
+    double **nearest;
+}KNN;
 
 /**
  * Finds the distance of each element, per process, from the pivot
@@ -151,16 +154,6 @@ int *findExchanges(int rank, int *counterReceiver, int worldSize, int master, MP
             }
         }
 
-//        printf("INFO INITIAL\n");
-//        for (int i = 0; i < worldSize; i++) {
-//            printf("\nThe rank %d has receive buffer: ", i);
-//            for (int j = 0; j < helperIndex[i]; ++j) {
-//                printf("%d ", info[i][j]);
-//            }
-//            printf("\n");
-//        }
-//        printf("\n");
-
         // Allocate memory for the request objects
         MPI_Request *requests = (MPI_Request *) malloc((worldSize - 1) * sizeof (MPI_Request));     // FREEMEM (CHECK)
 
@@ -179,6 +172,14 @@ int *findExchanges(int rank, int *counterReceiver, int worldSize, int master, MP
             MPI_Wait(&requests[i], MPI_STATUS_IGNORE);  // Wait for the requests to finish
         }
         *numberOfExchanges = helperIndex[0];  // The length of the array for the infos of the rank master
+
+        free(helperIndex);
+
+        // TODO possible snake
+        for (int i = 1; i < worldSize; i++) {
+            free(info[i]);
+        }
+
         return info[0];
 
     } else {
@@ -201,11 +202,6 @@ int *findExchanges(int rank, int *counterReceiver, int worldSize, int master, MP
 //        printf("\n");
         *numberOfExchanges = elements;
 
-        //free(helperIndex);
-//        for (int i = 0; i < worldSize; ++i) {
-//            free(info[i]);
-//        }
-//        free(info);
         return infoPerProc;
     }
 }
@@ -330,39 +326,11 @@ void mpi_test_function(double **points, int pointsPerProc, int dimension, double
 
         }
     }
-
+    free(dist);
 }
 
 bool isPowerOfTwo(int64_t number){
     return (ceil(log2((double)number)) == floor(log2((double)number)));
-}
-
-
-void knn_mpi_search(int k, double **nearest, double **points, int64_t numberOfPoints, int64_t dimension){
-    // The array points is sorted according to the sort of the array distances. So, when it is
-    // given as an argument the first k points of it are the nearest to the chosen point
-    if(k < numberOfPoints) {
-        printf("\nThe nearest are: \n");
-        for (int i = 0; i < k; ++i) {
-            for (int j = 0; j < dimension; ++j) {
-                nearest[i][j] = points[i + 1][j];
-                printf("%.1f ", nearest[i][j]);
-            }
-            printf("\n");
-        }
-    }
-    else if(k == numberOfPoints || k > numberOfPoints){
-        printf("\nThe nearest are: \n");
-        for (int i = 0; i < k; ++i) {
-            for (int j = 0; j < dimension; ++j) {
-                if( i == numberOfPoints - 1)        // The points array has no more elements
-                    break;
-                nearest[i][j] = points[i + 1][j];
-                printf("%.1f ", nearest[i][j]);
-            }
-            printf("\n");
-        }
-    }
 }
 
 
@@ -382,7 +350,7 @@ void knn_mpi_search(int k, double **nearest, double **points, int64_t numberOfPo
  * @param worldSize the number of processes
  * @param communicator "holds" the processes with which the function will be called with, recursively
  */
-void distributeByMedian(double *pivot,int master, int rank, int dimension, double **holdPoints, int pointsPerProc, int worldSize, MPI_Comm communicator, int k_neighbours) {
+void distributeByMedian(double *pivot,int master, int rank, int dimension, double **holdPoints, int pointsPerProc, int worldSize, MPI_Comm communicator) {
     double *distance = (double *) calloc(pointsPerProc,sizeof(double)); // for each point hold the squares of the subtractions  // FREEMEM(CHECK)
 
     // Find the distance of each point of the process from the pivot point chosen by the master
@@ -481,8 +449,7 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
     for (int j = 0; j < numberOfExchanges / 2; j++) {
         MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
     }
-
-    free(requests);
+    free(exchangePerProcess);
     free(sendPoints);
 
 
@@ -497,20 +464,195 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
 
 
     /// --------------------------------------------- Recursive call ---------------------------------------------
+
+
     // Termination condition
     if(worldSize == 2) {
 
-        //    int limit = 0;
-//    if(k_neighbours % pointsPerProc != 0){
-//        limit = k_neighbours / pointsPerProc + 1;
-//        printf("The limit with rank %d is %d\n", rank, limit);
-//    }
-//    else{
-//        limit = k_neighbours / pointsPerProc;
-//    }
-        // In the end of the recursion each process with rank < worldSize / 2 have points with distances from the pivot < median
-        // and the processes with ranks > worldSize / 2 have points with distances from the pivot > median
-        //So, the sequential function buildVPTree is called for each process in order to sort its points
+//
+//
+//        // In the end of the recursion each process with rank < worldSize / 2 have points with distances from the pivot < median
+//        // and the processes with ranks > worldSize / 2 have points with distances from the pivot > median
+//        //So, the sequential function buildVPTree is called for each process in order to sort its points
+
+
+        return;
+    }
+
+    MPI_Comm smallDistComm; // Define the new communicator after splitting the current worldSize in two for the recursive call
+    MPI_Comm bigDistComm;  // The new communicator for the processes with their distances > median
+
+    if (rank < worldSize / 2) {
+
+        MPI_Comm_split(communicator, 1, rank,
+                       &smallDistComm);  // Split the communicator in two parts for the processes with ranks > worldSize/2
+        // that have distances < median
+
+        MPI_Comm_rank(smallDistComm, &rank);  // Get the current rank after the split
+        MPI_Comm_size(smallDistComm, &worldSize);  // Get the current worldSize after the split
+
+        //        printf("New world size %d small comm\n", worldSize);
+        //        printf("New world rank %d small comm\n", rank);
+
+        // Call recursively for the new rank, size and communicator
+        distributeByMedian(pivot, 0, rank, dimension, holdPoints, pointsPerProc, worldSize, smallDistComm);
+
+        MPI_Comm_free(&smallDistComm);
+
+    } else {
+        // recursive call for the ranks >= worldSize/2 that have distances > median
+        MPI_Comm_split(communicator, 2, rank, &bigDistComm);
+        MPI_Comm_rank(bigDistComm, &rank);
+        MPI_Comm_size(bigDistComm, &worldSize);
+
+        //        printf("New world size %d big comm\n", worldSize);
+        //        printf("New world rank %d big comm\n", rank);
+        //printf("My rank is: %d ", rank);
+        distributeByMedian(pivot, 0, rank, dimension, holdPoints, pointsPerProc, worldSize, bigDistComm);
+
+        MPI_Comm_free(&bigDistComm);
+    }
+
+}
+
+
+void printArray(double **points, int64_t elements, int64_t dimension){
+    for (int i = 0; i < elements; ++i) {
+        for (int j = 0; j < dimension; ++j) {
+            printf("%.1f ", points[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+/**
+ * This function finds which processes has the closest points to the pivot, builds its VPTree according to the median distance from the pivot
+ * and send its points to the master. Master process calls the KNNSearch function and announces the k-nearest neighbours
+ * @param pivot The initial chosen pivot
+ * @param rank The process id
+ * @param size The world size of the communicator
+ * @param pointsPerProc the number of points per process
+ * @param holdPoints The array that holds each process's points
+ * @param dimension The dimension of the points
+ * @param k_neighbours The number of neighbours needed to be found
+ */
+KNN calculateMasterKNN(KNN perPivot, const double *pivot, int rank, int size, int64_t pointsPerProc, double **holdPoints, int64_t dimension, int k_neighbours){
+
+
+    // Find which processes will construct their VPTree in order to find the k-nearest neighbours
+    int64_t limit = 0;
+    if(k_neighbours % pointsPerProc != 0){
+        limit = k_neighbours / pointsPerProc + 1;
+    }
+    else{
+        limit = k_neighbours / pointsPerProc;
+    }
+
+
+    vptree initial;
+    initial.inner = NULL;
+    initial.outer = NULL;
+    initial.start = 0;
+    initial.stop = pointsPerProc - 1;
+
+    // Allocate memory for the vantage point and fill it with the last point's coordinates(random choice)
+    initial.vpPoint = (double *) malloc(dimension * sizeof(double));     // FREEMEM (check)
+    for (int i = 0; i < dimension; ++i) {
+        initial.vpPoint[i] = pivot[i];
+    }
+
+    // Update the distances
+    double *distancesPerProc = (double *) calloc(pointsPerProc, sizeof(double));        // FREEMEM(CHECK)
+
+    findDistance(distancesPerProc, holdPoints, dimension, initial.vpPoint, pointsPerProc);
+
+    buildVPTree(&initial, holdPoints, distancesPerProc, dimension, pointsPerProc);      // FREEMEM(CHECK)
+
+    freeMpiMemory(initial.inner);
+    freeMpiMemory(initial.outer);
+    free(initial.vpPoint);
+    free(distancesPerProc);
+
+    // This condition checks whether the master's points are enough for the needed neighbours
+    if(pointsPerProc > k_neighbours) {
+        knn_mpi_search(k_neighbours, perPivot.nearest, holdPoints, pointsPerProc, dimension);
+
+    }
+    else{
+        double *recvbuffer;
+
+        // The number of elements that have been requested to be sent
+        int *elements = (int *) malloc((limit - 1) * sizeof(int));  // FREEMEM(CHECK)
+        MPI_Request *requests = (MPI_Request *) malloc(limit * sizeof(MPI_Request));    // FREEMEM(CHECK)
+
+        unsigned long int reallocSize = 0;
+
+        for (int i = 0; i < limit - 1; i++) {
+
+            MPI_Status status;
+            MPI_Probe(i + 1, 12, MPI_COMM_WORLD, &status);  // Ask MPI to give you the size of the message
+
+            MPI_Get_count(&status, MPI_DOUBLE, &elements[i]);
+
+            if(i == 0){
+                // malloc the first time
+                recvbuffer = (double *)malloc(elements[i] * dimension * sizeof(double));    // FREEMEM (check)
+                reallocSize += elements[i] * dimension * sizeof(double);
+//                printf("receive buffer initial address: %p\n", recvbuffer);
+            }
+            else {
+                // realloc
+                recvbuffer = realloc(recvbuffer, reallocSize + elements[i] * dimension * sizeof(double));   // FREEMEM(CHECK)
+                reallocSize += elements[i] * dimension * sizeof(double);
+
+//                printf("receive buffer new address: %p\n", recvbuffer);
+            }
+
+            MPI_Irecv(recvbuffer + i * pointsPerProc * dimension,
+                      elements[i] * (int) dimension,
+                      MPI_DOUBLE,
+                      i + 1,
+                      12,
+                      MPI_COMM_WORLD,
+                      &requests[i]
+            );
+
+        }
+
+        for (int i = 0; i < limit - 1; ++i) {
+            MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
+        }
+
+        // Copy the points of the master rank to the nearest array
+        for (int i = 0; i < pointsPerProc; ++i) {
+            for (int j = 0; j < dimension; ++j) {
+                perPivot.nearest[i][j] = holdPoints[i][j];
+            }
+        }
+
+        // Copy the received points to the nearest array
+        int index = 0;
+        for (int i = 1; i < limit; ++i) {
+            for (int j = 0; j < elements[i - 1] / dimension; ++j) {
+                for (int k = 0; k < dimension; ++k) {
+                    perPivot.nearest[pointsPerProc * i + j][k] = recvbuffer[index];
+                    index++;
+                }
+            }
+        }
+
+        free(recvbuffer);
+        free(elements);
+    }
+
+    return perPivot;
+}
+
+
+void calculateSlaveKNN(const double *pivot, int rank, int size, int64_t pointsPerProc, double **holdPoints, int64_t dimension, int k_neighbours){
+    if (rank * pointsPerProc < k_neighbours) {
+        double *sendPoints;
+
         vptree initial;
         initial.inner = NULL;
         initial.outer = NULL;
@@ -518,58 +660,56 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
         initial.stop = pointsPerProc - 1;
 
         // Allocate memory for the vantage point and fill it with the last point's coordinates(random choice)
-        initial.vpPoint = (double *) malloc(dimension * sizeof(double));     // FREEMEM
+        initial.vpPoint = (double *) malloc(dimension * sizeof(double));     // FREEMEM(CHECK)
         for (int i = 0; i < dimension; ++i) {
-            initial.vpPoint[i] = holdPoints[pointsPerProc - 1][i];
+            initial.vpPoint[i] = pivot[i];
         }
 
         // Update the distances
-        double *distancesPerProc = (double *) calloc(pointsPerProc, sizeof(double));
+        double *distancesPerProc = (double *) calloc(pointsPerProc, sizeof(double));        // FREEMEM(CHECK)
 
-        if(rank == master)
-            findDistance(distancesPerProc, holdPoints, dimension, pivot, pointsPerProc);
+        findDistance(distancesPerProc, holdPoints, dimension, initial.vpPoint, pointsPerProc);
 
-        buildVPTree(&initial, holdPoints, distancesPerProc, dimension, pointsPerProc);
+        buildVPTree(&initial, holdPoints, distancesPerProc, dimension, pointsPerProc);      // FREEMEM(CHECK)
 
+        freeMpiMemory(initial.inner);
+        freeMpiMemory(initial.outer);
+        free(distancesPerProc);
+
+
+        if ((rank + 1) * pointsPerProc <= k_neighbours) {
+
+            // The buffer with the points that will be sent to the master  // FREEMEM(CHECK)
+            sendPoints = (double *) malloc(pointsPerProc * dimension * sizeof(double));
+
+            for (int i = 0; i < pointsPerProc; i++) {
+                memcpy(sendPoints + i * dimension, holdPoints[i],
+                       dimension * sizeof(double));  // copy the exchange points from holdPoints to the sendPoints
+                //printf("\nThe sendPoints[i] is: %.1f\n", sendPoints[i]);
+            }
+
+            MPI_Send(sendPoints, (int) (pointsPerProc * dimension), MPI_DOUBLE, 0, 12, MPI_COMM_WORLD);
+
+        } else {
+
+            int64_t pointsToGive = pointsPerProc - ((rank + 1) * pointsPerProc) % k_neighbours;
+
+            sendPoints = (double *) malloc(pointsToGive * dimension * sizeof(double));
+
+            for (int i = 0; i < pointsToGive; i++) {
+                memcpy(sendPoints + i * dimension, holdPoints[i], dimension * sizeof(double));
+            }
+
+            MPI_Send(sendPoints, (int) (pointsToGive * dimension), MPI_DOUBLE, 0, 12, MPI_COMM_WORLD);
+        }
+
+        free(initial.vpPoint);
+        free(sendPoints);
+    }
+    else{
         return;
     }
-    else {
-        MPI_Comm smallDistComm; // Define the new communicator after splitting the current worldSize in two for the recursive call
-        MPI_Comm bigDistComm;  // The new communicator for the processes with their distances > median
-
-
-        if (rank < worldSize / 2) {
-            MPI_Comm_split(communicator, 1, rank,
-                           &smallDistComm);  // Split the communicator in two parts for the processes with ranks > worldSize/2
-            // that have distances < median
-
-            MPI_Comm_rank(smallDistComm, &rank);  // Get the current rank after the split
-            MPI_Comm_size(smallDistComm, &worldSize);  // Get the current worldSize after the split
-
-            //        printf("New world size %d small comm\n", worldSize);
-            //        printf("New world rank %d small comm\n", rank);
-
-            // Call recursively for the new rank, size and communicator
-            distributeByMedian(pivot, 0, rank, dimension, holdPoints, pointsPerProc, worldSize, smallDistComm,
-                               k_neighbours);
-            MPI_Comm_free(&smallDistComm);
-        } else {
-            // recursive call for the ranks >= worldSize/2 that have distances > median
-            MPI_Comm_split(communicator, 2, rank, &bigDistComm);
-            MPI_Comm_rank(bigDistComm, &rank);
-            MPI_Comm_size(bigDistComm, &worldSize);
-
-            //        printf("New world size %d big comm\n", worldSize);
-            //        printf("New world rank %d big comm\n", rank);
-            //printf("My rank is: %d ", rank);
-            distributeByMedian(pivot, 0, rank, dimension, holdPoints, pointsPerProc, worldSize, bigDistComm,
-                               k_neighbours);
-            MPI_Comm_free(&bigDistComm);
-        }
-    }
-
 }
-
 
 int main(int argc, char **argv) {
     int size;
@@ -581,7 +721,7 @@ int main(int argc, char **argv) {
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if(argc != 3)
+    if (argc != 3)
         printf("\nGimme args!\n");
 
     /* Read the binary file with our data back in */
@@ -597,23 +737,22 @@ int main(int argc, char **argv) {
         fread(&numberOfPoints, sizeof(int64_t), 1, fh);
 
         // hold number of points that is a power of 2
-        if(!isPowerOfTwo(numberOfPoints)){
+        if (!isPowerOfTwo(numberOfPoints)) {
             int64_t power = 1;
-            while(power < numberOfPoints)
-                power*=2;
+            while (power < numberOfPoints)
+                power *= 2;
 
             numberOfPoints = power / 2;
-            if(rank == 0)
+            if (rank == 0)
                 printf("The number of points is: %ld\n", numberOfPoints);
-        }
-        else{
-            if(rank == 0)
+        } else {
+            if (rank == 0)
                 printf("The number of points is: %ld\n", numberOfPoints);
         }
 
 
         pointsPerProc = numberOfPoints / size;
-        printf("Rank: %d, Points per proc: %ld\n", rank, pointsPerProc);
+//        printf("Rank: %d, Points per proc: %ld\n", rank, pointsPerProc);
 
         // hold our points with their coordinates read from the file
         holdThePoints = (double **) malloc(pointsPerProc * sizeof(double *));   // FREEMEM
@@ -635,7 +774,7 @@ int main(int argc, char **argv) {
 
         double *pivot = (double *) calloc(dimension, sizeof(double));
 
-        if(rank == 0) {
+        if (rank == 0) {
             //printf("The pivot is: ");
             for (int j = 0; j < dimension; j++) {
                 pivot[j] = holdThePoints[0][j];
@@ -644,37 +783,72 @@ int main(int argc, char **argv) {
             //putchar('\n');
         }
 
-        if(rank == 0){
+        if (rank == 0) {
             start = MPI_Wtime();
         }
 
         int k_neighbours = atoi(argv[2]);
         //Broadcast the pivot to the processes
-        MPI_Bcast(pivot, (int)dimension, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Bcast(pivot, (int) dimension, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         distributeByMedian(pivot,
                            0,
                            rank,
-                           (int)dimension,
+                           (int) dimension,
                            holdThePoints,
-                           (int)pointsPerProc,
+                           (int) pointsPerProc,
                            size,
-                           MPI_COMM_WORLD,
-                           k_neighbours
+                           MPI_COMM_WORLD
         );
 
-        if(rank == 0){
+        if (rank == 0) {
             end = MPI_Wtime();
             printf("The time is: %.4f\n", end - start);
         }
 
-        mpi_test_function(holdThePoints, (int)pointsPerProc, (int)dimension, pivot);
-    }
 
-    for (int i = 0; i < pointsPerProc; ++i) {
-        free(holdThePoints[i]);
+//        mpi_test_function(holdThePoints, (int) pointsPerProc, (int) dimension, pivot);
+
+        KNN *totalNearest;
+        if(rank == 0) {
+            totalNearest = (KNN *)malloc(numberOfPoints * sizeof(double));  // FREEMEM
+
+            for (int i = 0; i < numberOfPoints; ++i) {
+
+                // for each point, each totalNearest array has k points
+                totalNearest[i].nearest = (double **) malloc(sizeof(double *) * k_neighbours);
+
+                for (int j = 0; j < k_neighbours; ++j) {
+                    totalNearest[i].nearest[j] = (double *) malloc(sizeof(double) * dimension);
+                }
+            }
+            calculateMasterKNN(totalNearest[0], pivot, rank, size, pointsPerProc, holdThePoints, dimension, k_neighbours);
+        }
+
+        calculateSlaveKNN(pivot, rank, size, pointsPerProc, holdThePoints, dimension, k_neighbours);
+
+        if(rank == 0){
+            for (int l = 0; l < numberOfPoints; ++l) {
+                for (int j = 0; j < k_neighbours; ++j) {
+                    free(totalNearest[l].nearest[j]);
+                }
+            }
+
+            for (int i = 0; i < numberOfPoints; ++i) {
+                free(totalNearest[i].nearest);
+            }
+            free(totalNearest);
+        }
+
+        for (int i = 0; i < pointsPerProc; ++i) {
+            free(holdThePoints[i]);
+        }
+        free(holdThePoints);
+
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        free(pivot);
     }
-    free(holdThePoints);
 
     MPI_Finalize();
 

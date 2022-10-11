@@ -197,52 +197,22 @@ int main(int argc, char **argv){
 
     Timer timer;
     startTimer(&timer);
-    //gettimeofday(&begin, 0);
     // Calculate the distances from the chosen pivot
     findDistance(distances, holdThePoints, dimension, initial.vpPoint, numberOfPoints);
     stopTimer(&timer);
     printf("Distance elapsed time:\n");
     displayElapsed(&timer);
-    //gettimeofday(&end,0);
-    //printf("Time for distance calculation: %.5f seconds.\n", measureTime(begin, end));
-//    printf("The sort of the points is: \n");
-//    for (int i = 0; i < numberOfPoints; ++i) {
-//        for (int j = 0; j < dimension; ++j) {
-//            printf("%.2f ", holdThePoints[i][j]);
-//        }
-//        printf("\n");
-//    }
 
-    //gettimeofday(&begin, 0);
+
     startTimer(&timer);
     buildVPTree(&initial, holdThePoints, distances, dimension, numberOfPoints);
     stopTimer(&timer);
     printf("Distance elapsed time:\n");
     displayElapsed(&timer);
-    //gettimeofday(&end,0);
-//    printf("Time for tree construction: %.5f seconds.\n", measureTime(begin, end));
     printf("The median distance is: %.2f ", initial.median);
-
-//    printf("The sort of the points is: \n");
-//    for (int i = 0; i < numberOfPoints; ++i) {
-//        for (int j = 0; j < dimension; ++j) {
-//            printf("%.2f ", holdThePoints[i][j]);
-//        }
-//        printf("\n");
-//    }
-
-//    printf("\n\nThe array with distances is:\n");
-//    for (int i = 0; i < numberOfPoints; ++i) {
-//        printf("%.2f ", distances[i]);
-//    }
-//    printf("\n");
 
     // Check if the array is sorted correctly
     testFunction(distances, numberOfPoints);
-
-//    for (int i = 0; i < numberOfPoints; ++i) {
-//        printf("The distance is %.10f\n", distances[i]);
-//    }
 
     // Free memory SO AS NOT TO HAVE MEMORY LEAKS(I DON'T DO SUCH THINGS, A FRIEND TOLD ME)
     for (int i = 0; i < numberOfPoints; ++i) {

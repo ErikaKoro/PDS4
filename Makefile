@@ -1,6 +1,6 @@
 CC = gcc
 MPICC = mpicc
-CILK = /usr/local/OpenCilk-2.0.0/bin/clang
+CILK = /usr/local/OpenCilk-2.0.0-x86_64-Linux-Ubuntu-22.04/bin/clang
 
 BUILD_DIR := ./make-build-debug-g
 MPI_BUILD_DIR := ./make-build-debug-mpi
@@ -15,6 +15,11 @@ NC = \033[0m
 BOLD = \033[1m
 
 # Directories
+
+DATA_SRC := $(shell find $(SRC_DIRS)/Data -name '*.c')
+DATA_SRC += $(shell find $(SRC_DIRS) -maxdepth 1 -name '*.c')
+DATA_SRC := $(SERIAL_SRC:%=$(BUILD_DIR)/%.o)
+
 SERIAL_SRC := $(shell find $(SRC_DIRS)/sequential -name '*.c')
 SERIAL_SRC += $(shell find $(SRC_DIRS) -maxdepth 1 -name '*.c')
 SERIAL_SRC := $(SERIAL_SRC:%=$(BUILD_DIR)/%.o)
@@ -38,7 +43,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CC_FLAGS := $(INC_FLAGS) -O3 -g
 MPI_FLAGS := $(INC_FLAGS) -O3 -g -lm
-CILK_FLAGS := $(INC_FLAGS) -O3 -g -fopencilk # -fsanitize=cilk -Og -g
+CILK_FLAGS := $(INC_FLAGS) -O3 -fopencilk # -fsanitize=cilk -Og -g
 
 all: build_sequential build_mpi build_cilk
 
@@ -118,7 +123,7 @@ build_mpi: $(MPI_BUILD_DIR)/mpi.out
 run_mpi: $(MPI_BUILD_DIR)/mpi.out
 	@echo
 	@echo
-	@mpirun -hostfile hosts $(MPI_BUILD_DIR)/mpi.out ./src/Data/data 4
+	@mpirun -hostfile hosts $(MPI_BUILD_DIR)/mpi.out ./src/Data/data 5
 	@echo
 	@echo
 
@@ -126,7 +131,7 @@ run_mpi: $(MPI_BUILD_DIR)/mpi.out
 valgrind_mpi: $(MPI_BUILD_DIR)/mpi.out
 	@echo
 	@echo
-	@mpirun -np 2 valgrind $(MPI_BUILD_DIR)/mpi.out ./src/Data/data
+	@mpirun -np 2 valgrind --leak-check=full --suppressions=./openmpi-valgrind.supp $(MPI_BUILD_DIR)/mpi.out ./src/Data/data 5
 	@echo
 	@echo
 

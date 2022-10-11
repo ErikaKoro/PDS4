@@ -1,7 +1,11 @@
 .idea/*
 build/*
 cmake-build-*/*
-src/data
-src/cilk_test.c
+src/Data/data
+src/cilk/cilk_test.c
 cilk_out
 check.rpt
+make-build-debug-mpi/*
+openmpi-valgrind.supp
+vgcore.*
+.run/*
