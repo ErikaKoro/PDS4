@@ -8,7 +8,7 @@
  * @param a Element to be swapped
  * @param b Element to be swapped
  */
-void swap(double* a, double* b){
+void swapMpi(double* a, double* b){
     double temp = *a;
     *a = *b;
     *b = temp;
@@ -21,7 +21,7 @@ void swap(double* a, double* b){
  * @param right highest element of the array
  * @return pivot's index
  */
-int partition(double arr[], int left, int right){
+int partitionMpi(double arr[], int left, int right){
     double pivot = arr[right];
 
     int i = left;
@@ -29,13 +29,13 @@ int partition(double arr[], int left, int right){
 
     while (j < right){
         if(arr[j] < pivot){
-            swap(&arr[i], &arr[j]);
+            swapMpi(&arr[i], &arr[j]);
             i++;
         }
         j++;
     }
 
-    swap(&arr[i], &arr[right]);
+    swapMpi(&arr[i], &arr[right]);
 
     return i;
 }
@@ -48,14 +48,14 @@ int partition(double arr[], int left, int right){
  * @param right
  * @return the right position of randomly picked pivot
  */
-int randomPartition(double arr[], int left, int right){
+int randomPartitionMpi(double arr[], int left, int right){
     srand(time(NULL));
     int length = right - left + 1;
     int pivot = rand() % length;
 
-    swap(&arr[left + pivot], &arr[right]);
+    swapMpi(&arr[left + pivot], &arr[right]);
 
-    return partition(arr, left, right);
+    return partitionMpi(arr, left, right);
 }
 
 /**
@@ -67,12 +67,12 @@ int randomPartition(double arr[], int left, int right){
  * @param a
  * @param b
  */
-void MedianUtil(double arr[], int left, int right, int middle, double *a, double *b){
+void MedianMpiUtil(double arr[], int left, int right, int middle, double *a, double *b){
 
     if (left <= right) {
 
         // Find the partition index
-        int partitionIndex = randomPartition(arr, left, right);
+        int partitionIndex = randomPartitionMpi(arr, left, right);
 
 
         if (partitionIndex == middle) {
@@ -92,13 +92,13 @@ void MedianUtil(double arr[], int left, int right, int middle, double *a, double
         // find the index in first half
         // of the arr[]
         if (partitionIndex >= middle){
-            return MedianUtil(arr, left, partitionIndex - 1, middle, a, b);
+            return MedianMpiUtil(arr, left, partitionIndex - 1, middle, a, b);
         }
             // If partitionIndex <= k then
             // find the index in second half
             // of the arr[]
         else{
-            return MedianUtil(arr, partitionIndex + 1, right, middle, a, b);
+            return MedianMpiUtil(arr, partitionIndex + 1, right, middle, a, b);
         }
     }
 
@@ -110,19 +110,19 @@ void MedianUtil(double arr[], int left, int right, int middle, double *a, double
  * @param length
  * @return median
  */
-double findMedian(double *arr, int length){
+double findMpiMedian(double *arr, int length){
     double result;
 
     double a = -1.0, b = -1.0;
 
     // If n is odd
     if (length % 2 == 1) {
-        MedianUtil(arr, 0, length - 1, length / 2, &a, &b);
+        MedianMpiUtil(arr, 0, length - 1, length / 2, &a, &b);
         result = b;
     }
         // If n is even
     else {
-        MedianUtil(arr, 0, length - 1, length / 2, &a, &b);
+        MedianMpiUtil(arr, 0, length - 1, length / 2, &a, &b);
         result = (a + b) / 2;
     }
 

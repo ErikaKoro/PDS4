@@ -25,6 +25,7 @@ SERIAL_SRC += $(shell find $(SRC_DIRS) -maxdepth 1 -name '*.c')
 SERIAL_SRC := $(SERIAL_SRC:%=$(BUILD_DIR)/%.o)
 
 MPI_SRC := $(shell find $(SRC_DIRS)/mpi -name '*.c')
+MPI_SRC += $(shell find $(SRC_DIRS) -maxdepth 1 -name '*.c')
 MPI_SRC := $(MPI_SRC:%=$(MPI_BUILD_DIR)/%.o)
 
 CILK_SRC := $(shell find $(SRC_DIRS)/cilk -name '*.c')
@@ -123,7 +124,7 @@ build_mpi: $(MPI_BUILD_DIR)/mpi.out
 run_mpi: $(MPI_BUILD_DIR)/mpi.out
 	@echo
 	@echo
-	@mpirun -hostfile hosts $(MPI_BUILD_DIR)/mpi.out ./src/Data/data 5
+	@mpirun -hostfile hosts $(MPI_BUILD_DIR)/mpi.out ./src/Data/data 1000
 	@echo
 	@echo
 

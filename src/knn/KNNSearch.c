@@ -1,42 +1,24 @@
-#include "quick_select.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <sys/time.h>
+
+#include "../timer.h"
+#include "quick_select.h"
+
 
 typedef struct knn{
     double **nearest;
 }KNN;
 
 
-typedef struct vptree{
+typedef struct knn_vptree{
     int64_t start;      // The index of the tree's start point
     int64_t stop;
     double *vpPoint;   // vantage point
     double median;     // the euclidean median distance from the vantage point
-    struct vptree *inner;   // vantage point subtrees
-    struct vptree *outer;
+    struct knn_vptree *inner;   // vantage point subtrees
+    struct knn_vptree *outer;
 }vptree;
-
-
-/**
- * Calculates the elapse time
- *
- * @param begin the starting timestamp
- * @param end the ending timestamp
- * @return elapsed time in seconds
- */
-double measureTime(struct timeval begin, struct timeval end) {
-    long seconds;
-    long microseconds;
-    double elapsed;
-
-    seconds = end.tv_sec - begin.tv_sec;
-    microseconds = end.tv_usec - begin.tv_usec;
-    elapsed = seconds + microseconds * 1e-6;
-
-    return elapsed;
-}
 
 
 /**
@@ -134,7 +116,6 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
     }
 }
 
-
 /**
  * Function that is called in order to free the memory in a tree
  *
@@ -221,7 +202,7 @@ void knn_search(int k, double **nearest, double **points, int64_t numberOfPoints
             printf("\n");
         }
     }
-    else if(k == numberOfPoints || k > numberOfPoints){
+    else if(k >= numberOfPoints){
         printf("\nThe nearest are: \n");
         for (int i = 0; i < k; ++i) {
             for (int j = 0; j < dimension; ++j) {
@@ -335,15 +316,17 @@ int main(int argc, char **argv){
 
 
     // Vars needed for execution time measurement
-    struct timeval begin, end;
     int k = atoi(argv[2]);
+
+    if(k > numberOfPoints){
+        k = numberOfPoints;
+    }
     KNN *neighbours;
-
-    gettimeofday(&begin, 0);
+    Timer timer;
+    startTimer(&timer);
     neighbours = calculateKNN(dimension, numberOfPoints, k, holdThePoints);
-    gettimeofday(&end, 0);
-    printf("Time for tree construction: %.5f seconds.\n", measureTime(begin, end));
-
+    stopTimer(&timer);
+    displayElapsed(&timer);
 
      // Free memory SO AS NOT TO HAVE MEMORY LEAKS(I DON'T DO SUCH THINGS, A FRIEND TOLD ME)
     for (int i = 0; i < numberOfPoints; ++i) {

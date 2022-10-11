@@ -1,4 +1,3 @@
-#include "cilk_vptree.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <cilk/cilk.h>
@@ -7,6 +6,17 @@
 #include <inttypes.h>
 #include "quick_select.h"
 #include "timer.h"
+
+
+typedef struct cilk_vptree{
+    int64_t start;      // The index of the tree's start point
+    int64_t stop;
+    double *vpPoint;   // vantage point
+    double median;     // the euclidean median distance from the vantage point
+    int64_t vpIndex;   // the index of the vantage point tree in the original set
+    struct cilk_vptree *inner;   // vantage point subtrees
+    struct cilk_vptree *outer;
+}vptree;
 
 
 /**

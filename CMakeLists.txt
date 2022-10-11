@@ -20,7 +20,6 @@ add_executable(CILK
         src/quick_select.c
         src/quick_select.h
         src/cilk/cilk_vptree.c
-        src/cilk/cilk_vptree.h
         src/timer.c)
 
 target_link_libraries(CILK -fopencilk)
@@ -34,7 +33,7 @@ add_executable(MPI
         src/mpi/mpi_knn.c
         src/mpi/mpi_quick_select.h
         src/mpi/mpi_quick_select.c
-        src/mpi/mpi_tree.c)
+        src/mpi/mpi_tree.c src/mpi/mpi_master.c src/mpi/mpi_master.h src/mpi/mpi_slave.c src/mpi/mpi_slave.h src/mpi/mpi_exchanges.c src/mpi/mpi_exchanges.h src/mpi/distribute_by_median.c src/mpi/distribute_by_median.h)
 
 target_link_libraries(MPI -lm)
 

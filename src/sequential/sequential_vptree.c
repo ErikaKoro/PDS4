@@ -3,27 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <sys/time.h>
 #include "../timer.h"
-
-/**
- * Calculates the elapse time
- *
- * @param begin the starting timestamp
- * @param end the ending timestamp
- * @return elapsed time in seconds
- */
-double measureTime(struct timeval begin, struct timeval end) {
-    long seconds;
-    long microseconds;
-    double elapsed;
-
-    seconds = end.tv_sec - begin.tv_sec;
-    microseconds = end.tv_usec - begin.tv_usec;
-    elapsed = seconds + microseconds * 1e-6;
-
-    return elapsed;
-}
 
 
 /**
