@@ -13,7 +13,7 @@ add_executable(PDS4
         src/sequential/sequential_vptree.h
         src/timer.c)
 
-add_executable(data
+add_executable(
         src/Data/main.c)
 
 add_executable(CILK

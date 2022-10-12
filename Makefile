@@ -17,8 +17,7 @@ BOLD = \033[1m
 # Directories
 
 DATA_SRC := $(shell find $(SRC_DIRS)/Data -name '*.c')
-DATA_SRC += $(shell find $(SRC_DIRS) -maxdepth 1 -name '*.c')
-DATA_SRC := $(SERIAL_SRC:%=$(BUILD_DIR)/%.o)
+DATA_SRC := $(DATA_SRC:%=$(BUILD_DIR)/%.o)
 
 SERIAL_SRC := $(shell find $(SRC_DIRS)/sequential -name '*.c')
 SERIAL_SRC += $(shell find $(SRC_DIRS) -maxdepth 1 -name '*.c')
@@ -48,6 +47,13 @@ CILK_FLAGS := $(INC_FLAGS) -O3 -fopencilk # -fsanitize=cilk -Og -g
 
 all: build_sequential build_mpi build_cilk
 
+$(BUILD_DIR)/data.out: $(DATA_SRC)
+	@echo
+	@echo -e "        $(BOLD)Linking...$(NC)"
+	@echo
+	@$(CC) $(CC_FLAGS) -o $(BUILD_DIR)/data.out $(DATA_SRC)
+	@echo -e "    $(GREEN)Build finished successfully!$(NC)"
+	@echo
 
 $(BUILD_DIR)/sequential.out: $(SERIAL_SRC)
 	@echo
@@ -103,6 +109,13 @@ $(CILK_BUILD_DIR)/%.c.o: %.c
 
 %.c:
 
+build_data: $(BUILD_DIR)/data.out
+run_data: $(BUILD_DIR)/data.out
+	@echo
+	@echo
+	@$(BUILD_DIR)/data.out 2 8 ./src/Data/data
+	@echo
+	@echo
 
 build_sequential: $(BUILD_DIR)/sequential.out
 run_sequential: $(BUILD_DIR)/sequential.out
