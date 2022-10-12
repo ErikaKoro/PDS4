@@ -5,7 +5,7 @@ src/Data/data
 src/cilk/cilk_test.c
 cilk_out
 check.rpt
-make-build-debug-mpi/*
+make-build-debug-*/*
 openmpi-valgrind.supp
 vgcore.*
 .run/*
