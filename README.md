@@ -19,29 +19,27 @@
 - [1. About this project](#1-about-this-project)
 - [2. Getting started](#2-getting-started)
 - [3. Dependencies](#3-dependencies)
-    - [3.0.1. Make or Cmake](#301-make-or-cmake)
+    - [3.0.1. Make](#301-make)
     - [3.0.2. OpenMPI](#302-openmpi)
     - [3.0.3. OpenCilk-9.0.1](#303-opencilk-901)
 - [4. Project directory layout](#4-project-directory-layout)
   - [4.1. PDS4](#41-pds4)
 - [5. Compile and run](#5-compile-and-run)
   - [5.1. Linux](#51-linux)
-  - [Sequential](#sequential)
-  - [OpenCilk](#opencilk)
-  - [KNN_Search](#knn_search)
-  - [mpi](#mpi)
-  - [Clean](#clean)
-  - [5.3. Command line argumnets](#53-command-line-argumnets)
+  - [5.2. Sequential](#52-sequential)
+  - [5.3. OpenCilk](#53-opencilk)
+  - [5.4. KNN_Search](#54-knn_search)
+  - [5.5. mpi](#55-mpi)
+  - [5.6. Clean](#56-clean)
+  - [5.7. Command line argumnets](#57-command-line-argumnets)
 <br/>
 
 ## 1. About this project
 
-<p align="justify">
-  The objective of this assignment is to parallelize the KNN algorithm
-  using Cilk and MPI C libraries.
-<br/>
-<br/>
-  The first part of the project is to build sequentially the vantage point tree and then calculate its k-nearest neighbours.Secondly, this algorithm is used for calculating all points' k-nearest neighbours.Finally, cilk is used to parallelize the construction of the vantage point tree and the distances' calculations and MPI is implemented in order to parallelize the KNN algorithm.
+
+The objective of this assignment is to parallelize the KNN algorithm using Cilk and MPI C libraries.
+
+The first part of the project is to build sequentially the vantage point tree and then calculate its k-nearest neighbours.Secondly, this algorithm is used for calculating all points' k-nearest neighbours.Finally, cilk is used to parallelize the construction of the vantage point tree and the distances' calculations and MPI is implemented in order to parallelize the KNN algorithm.
 <br/>
 <br/>
 </p>
@@ -54,14 +52,14 @@ To setup this repository on your local machine run the following commands on the
 git clone git@github.com:ErikaKoro/PDS4.git
 ```
 
-Or alternatively [*download*](https://github.com/ErikaKoro/PDS4.git) and extract the zip file of the repository
+Or alternatively [*download*](https://github.com/ErikaKoro/PDS4/archive/refs/heads/main.zip) and extract the zip file of the repository
 <br/>
 <br/>
 
 ## 3. Dependencies
-#### 3.0.1. Make or Cmake
+#### 3.0.1. Make
 
-This project uses make utilities to build and run the excecutables. Alternatively you can use Cmake but openCilk and MPI are not supported in the build script.
+This project uses make utilities to build and run the excecutables. 
 
 #### 3.0.2. OpenMPI
 
@@ -106,25 +104,25 @@ IMPORTANT! The path to the openCilk clang binary should be updated in the Makefi
 
 ### 5.1. Linux
 
-### Sequential
+### 5.2. Sequential
 Simply run `make run_sequential` in the [*PDS4*](PDS4) directory in order to run the executable for sequential code that creates the vantage point tree. The executable files will be created in the `BUILD_DIR` directory along with the `object` files.
 
-### OpenCilk
+### 5.3. OpenCilk
 Run `make run_cilk` in order to run the executable for the OpenCilk parallelized code.
 
-### KNN_Search
+### 5.4. KNN_Search
 Run `make run_knn` in order to run the executable for the KNN algorithm for all points of the dataset.
 
-### mpi
+### 5.5. mpi
 Run `make run_mpi` in order to run the executable for the distributed solution for the KNN algorithm.
 
-### Clean
+### 5.6. Clean
 Run `make clean` to clear all the object and executable files. For more information on the command line arguments read bellow.
 
 
 <br/>
 
-### 5.3. Command line argumnets
+### 5.7. Command line argumnets
 
 * Data executable
     ```C
