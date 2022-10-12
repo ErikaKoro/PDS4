@@ -114,7 +114,7 @@ Run `make run_cilk` in order to run the executable for the OpenCilk parallelized
 Run `make run_knn` in order to run the executable for the KNN algorithm for all points of the dataset.
 
 ### 5.5. mpi
-Run `make run_mpi` in order to run the executable for the distributed solution for the KNN algorithm. To change the number of hosts change the host file in the `PDS4` deirectory. The default number of is 8 slots on the locallhost.
+Run `make run_mpi` in order to run the executable for the distributed solution for the KNN algorithm. To change the number of hosts change the host file in the `PDS4` directory. The default number is 8 slots on the locallhost.
 
 ### 5.6. Clean
 Run `make clean` to clear all the object and executable files. For more information on the command line arguments read bellow.
