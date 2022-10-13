@@ -120,7 +120,7 @@ Run `make clean` to clear all the object and executable files. For more informat
 <br/>
 
 ### 5.6. Command line argumnets
-
+**If you want to change one of the following arguments, you need to change them in the corresponding target in the Makefile.**
 * Data executable
     ```C
     argv[1] = dimension of points
