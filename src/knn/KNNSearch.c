@@ -51,7 +51,7 @@ double *findDistance(double *dist, double **points, int64_t dimension, const dou
  * @param dimension The points' dimension
  * @param numberOfPoints The number of points
  */
-void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t dimension, int64_t numberOfPoints, int Kneighbours){
+void buildKNNVPTree(vptree *parentTree, double **points, double *distances, int64_t dimension, int64_t numberOfPoints, int Kneighbours){
     // Condition that terminates the recursion
     if(numberOfPoints == 1)
         return ;
@@ -70,7 +70,7 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
         parentTree->inner->stop = numberOfPoints / 2 - 1 + parentTree->start;
 //    parentTree->inner->vpPoint = parentTree->vpPoint;
 
-        buildVPTree(
+        buildKNNVPTree(
                 parentTree->inner,
                 points,
                 distances,
@@ -89,7 +89,7 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
         parentTree->inner->stop = numberOfPoints / 2 - 1 + parentTree->start;
 //    parentTree->inner->vpPoint = parentTree->vpPoint;
 
-        buildVPTree(
+        buildKNNVPTree(
                 parentTree->inner,
                 points,
                 distances,
@@ -105,7 +105,7 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
         parentTree->outer->stop = parentTree->stop;
         //    parentTree->outer->vpPoint = parentTree->vpPoint;
 
-        buildVPTree(
+        buildKNNVPTree(
                 parentTree->outer,
                 points,
                 distances,
@@ -154,14 +154,14 @@ void freeMemory(vptree *tree) {
  * @param distances
  * @param numberOfPoints
  */
-void testFunction(double const *distances, int64_t numberOfPoints){
+void testKNNFunction(double const *distances, int64_t numberOfPoints, int m){
     for (int i = 1; i < numberOfPoints; ++i) {
         if(distances[i - 1] > distances[i]){
-            printf("\nTest Failed\n");
+            printf("\nTest %d Failed\n", m);
             return;
         }
     }
-    //printf("Test passed\n\n");
+    printf("Test %d passed\n\n", m);
 }
 
 /**
@@ -193,25 +193,25 @@ void knn_search(int k, double **nearest, double **points, int64_t numberOfPoints
     // The array points is sorted according to the sort of the array distances. So, when it is
     // given as an argument the first k points of it are the nearest to the chosen point
     if(k < numberOfPoints) {
-        printf("\nThe nearest are: \n");
+        //printf("\nThe nearest are: \n");
         for (int i = 0; i < k; ++i) {
             for (int j = 0; j < dimension; ++j) {
                 nearest[i][j] = points[i + 1][j];
-                printf("%.1f ", nearest[i][j]);
+                //printf("%.1f ", nearest[i][j]);
             }
-            printf("\n");
+            //printf("\n");
         }
     }
     else if(k >= numberOfPoints){
-        printf("\nThe nearest are: \n");
+        //printf("\nThe nearest are: \n");
         for (int i = 0; i < k; ++i) {
             for (int j = 0; j < dimension; ++j) {
                 if( i == numberOfPoints - 1)        // The points array has no more elements
                     break;
                 nearest[i][j] = points[i + 1][j];
-                printf("%.1f ", nearest[i][j]);
+                //printf("%.1f ", nearest[i][j]);
             }
-            printf("\n");
+            //printf("\n");
         }
     }
 }
@@ -263,7 +263,9 @@ KNN *calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **poi
         distances = findDistance(distances, copied, dimension, initial->vpPoint, numberOfPoints);
 
 
-        buildVPTree(initial, copied, distances, dimension, numberOfPoints, k);
+        buildKNNVPTree(initial, copied, distances, dimension, numberOfPoints, k);
+
+        //testKNNFunction(distances, k, i);
 
         knn_search(k, total[i].nearest, copied, numberOfPoints, dimension);
 
@@ -286,7 +288,7 @@ KNN *calculateKNN(int64_t dimension, int64_t numberOfPoints, int k, double **poi
 int main(int argc, char **argv){
 
     if(argc != 3){
-        printf("gimme args you stupid\n");
+        printf("Give me args!\n");
         return -1;
     }
 
@@ -319,8 +321,9 @@ int main(int argc, char **argv){
     int k = atoi(argv[2]);
 
     if(k > numberOfPoints){
-        k = numberOfPoints;
+        k = (int)numberOfPoints;
     }
+
     KNN *neighbours;
     Timer timer;
     startTimer(&timer);
@@ -333,11 +336,23 @@ int main(int argc, char **argv){
         free(holdThePoints[i]);
     }
     free(holdThePoints);
+
+    /*for (int m = 0; m < numberOfPoints; ++m) {
+        printf("\nNeighbours of %d point\n", m);
+        for (int j = 0; j < k; ++j) {
+            for (int l = 0; l < dimension; l++) {
+                printf("%.1f ", neighbours[m].nearest[j][l]);
+            }
+            printf("\n");
+        }
+    }*/
+
     for (int l = 0; l < numberOfPoints; ++l) {
         for (int j = 0; j < k; ++j) {
             free(neighbours[l].nearest[j]);
         }
     }
+
 
     for (int i = 0; i < numberOfPoints; ++i) {
         free(neighbours[i].nearest);

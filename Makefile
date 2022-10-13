@@ -43,7 +43,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CC_FLAGS := $(INC_FLAGS) -O3 -g
 MPI_FLAGS := $(INC_FLAGS) -O3 -g -lm
-CILK_FLAGS := $(INC_FLAGS) -O3 -fopencilk # -fsanitize=cilk -Og -g
+CILK_FLAGS := $(INC_FLAGS) -O3 -fopencilk -g # -fsanitize=cilk -Og -g
 
 all: build_sequential build_mpi build_cilk
 
@@ -113,7 +113,7 @@ build_data: $(BUILD_DIR)/data.out
 run_data: $(BUILD_DIR)/data.out
 	@echo
 	@echo
-	@$(BUILD_DIR)/data.out 2 8 ./src/Data/data
+	@$(BUILD_DIR)/data.out 40 8192 ./src/Data/data
 	@echo
 	@echo
 
@@ -129,7 +129,7 @@ build_knn: $(BUILD_DIR)/knn.out
 run_knn: $(BUILD_DIR)/knn.out
 	@echo
 	@echo
-	@$(BUILD_DIR)/knn.out ./src/Data/data 1000
+	@$(BUILD_DIR)/knn.out ./src/Data/data 4096
 	@echo
 	@echo
 
@@ -137,7 +137,7 @@ build_mpi: $(MPI_BUILD_DIR)/mpi.out
 run_mpi: $(MPI_BUILD_DIR)/mpi.out
 	@echo
 	@echo
-	@mpirun -hostfile hosts $(MPI_BUILD_DIR)/mpi.out ./src/Data/data 1000
+	@mpirun -hostfile hosts $(MPI_BUILD_DIR)/mpi.out ./src/Data/data 4096
 	@echo
 	@echo
 
@@ -153,7 +153,7 @@ build_cilk: $(CILK_BUILD_DIR)/cilk.out
 run_cilk: $(CILK_BUILD_DIR)/cilk.out
 	@echo
 	@echo
-	@$(CILK_BUILD_DIR)/cilk.out ./src/Data/data
+	@$(CILK_BUILD_DIR)/cilk.out ./src/Data/data 5
 	@echo
 	@echo
 

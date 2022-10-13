@@ -25,10 +25,12 @@ void calculateSlaveKNN(const double *pivot, int rank, int size, int64_t pointsPe
 
         findDistance(distancesPerProc, holdPoints, dimension, initial.vpPoint, pointsPerProc);
 
-        buildVPTree(&initial, holdPoints, distancesPerProc, dimension, pointsPerProc);      // FREEMEM(CHECK)
+        buildVPTree(&initial, holdPoints, distancesPerProc, dimension, pointsPerProc, k_neighbours);      // FREEMEM(CHECK)
 
         freeMpiMemory(initial.inner);
-        freeMpiMemory(initial.outer);
+        if(initial.outer != NULL) {
+            freeMpiMemory(initial.outer);
+        }
         free(distancesPerProc);
 
 

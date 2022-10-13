@@ -14,7 +14,7 @@ typedef struct mpi_vptree{
 
 void findDistance(double *dist, double **points, int64_t dimension, const double *pivot, int64_t numberOfPoints);
 
-void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t dimension, int64_t numberOfPoints);
+void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t dimension, int64_t numberOfPoints, int k_neighbours);
 
 void knn_mpi_search(int k, double **nearest, double **points, int64_t numberOfPoints, int64_t dimension);
 

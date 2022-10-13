@@ -25,13 +25,12 @@
 - [4. Project directory layout](#4-project-directory-layout)
   - [4.1. PDS4](#41-pds4)
 - [5. Compile and run](#5-compile-and-run)
-  - [5.1. Linux](#51-linux)
-  - [5.2. Sequential](#52-sequential)
-  - [5.3. OpenCilk](#53-opencilk)
-  - [5.4. KNN_Search](#54-knn_search)
-  - [5.5. mpi](#55-mpi)
-  - [5.6. Clean](#56-clean)
-  - [5.7. Command line argumnets](#57-command-line-argumnets)
+  - [5.1. Sequential](#51-sequential)
+  - [5.2. OpenCilk](#52-opencilk)
+  - [5.3. KNN_Search](#53-knn_search)
+  - [5.4. mpi](#54-mpi)
+  - [5.5. Clean](#55-clean)
+  - [5.6. Command line argumnets](#56-command-line-argumnets)
 <br/>
 
 ## 1. About this project
@@ -102,27 +101,25 @@ IMPORTANT! The path to the openCilk clang binary should be updated in the Makefi
 
 ## 5. Compile and run
 
-### 5.1. Linux
-
-### 5.2. Sequential
+### 5.1. Sequential
 Simply run `make run_sequential` in the [*PDS4*](PDS4) directory in order to run the executable for sequential code that creates the vantage point tree. The executable files will be created in the `BUILD_DIR` directory along with the `object` files.
 
-### 5.3. OpenCilk
+### 5.2. OpenCilk
 Run `make run_cilk` in order to run the executable for the OpenCilk parallelized code.
 
-### 5.4. KNN_Search
+### 5.3. KNN_Search
 Run `make run_knn` in order to run the executable for the KNN algorithm for all points of the dataset.
 
-### 5.5. mpi
+### 5.4. mpi
 Run `make run_mpi` in order to run the executable for the distributed solution for the KNN algorithm. To change the number of hosts change the host file in the `PDS4` directory. The default number is 8 slots on the locallhost.
 
-### 5.6. Clean
+### 5.5. Clean
 Run `make clean` to clear all the object and executable files. For more information on the command line arguments read bellow.
 
 
 <br/>
 
-### 5.7. Command line argumnets
+### 5.6. Command line argumnets
 
 * Data executable
     ```C

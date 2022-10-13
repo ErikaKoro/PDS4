@@ -15,7 +15,7 @@ void findDistance(double *dist, double **points, int64_t dimension, const double
     }
 }
 
-void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t dimension, int64_t numberOfPoints) {
+void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t dimension, int64_t numberOfPoints, int k_neighbours) {
     // Condition that terminates the recursion
     if (numberOfPoints == 1)
         return;
@@ -24,38 +24,60 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
     // In findMedian we sort the array of points according to the sort of distances.
     parentTree->median = findMedian(points + parentTree->start, distances + parentTree->start, numberOfPoints);
 
-    // Initialize inner tree
-    parentTree->inner = (vptree *) malloc(sizeof(vptree));      // FREEMEM
-    parentTree->inner->inner = NULL;
-    parentTree->inner->outer = NULL;
-    parentTree->inner->start = parentTree->start;
-    parentTree->inner->stop = numberOfPoints / 2 - 1 + parentTree->start;
+    if(k_neighbours < numberOfPoints / 2) {
+        // Initialize inner tree
+        parentTree->inner = (vptree *) malloc(sizeof(vptree));      // FREEMEM
+        parentTree->inner->inner = NULL;
+        parentTree->inner->outer = NULL;
+        parentTree->inner->start = parentTree->start;
+        parentTree->inner->stop = numberOfPoints / 2 - 1 + parentTree->start;
 //    parentTree->inner->vpPoint = parentTree->vpPoint;
 
-    buildVPTree(
-            parentTree->inner,
-            points,
-            distances,
-            dimension,
-            parentTree->inner->stop - parentTree->inner->start + 1
-    );
+        buildVPTree(
+                parentTree->inner,
+                points,
+                distances,
+                dimension,
+                parentTree->inner->stop - parentTree->inner->start + 1,
+                k_neighbours
+        );
 
+    }else {
 
-    // Initialize outer tree
-    parentTree->outer = (vptree *) malloc(sizeof(vptree));      // FREEMEM
-    parentTree->outer->inner = NULL;
-    parentTree->outer->outer = NULL;
-    parentTree->outer->start = numberOfPoints / 2 + parentTree->start;
-    parentTree->outer->stop = parentTree->stop;
+        // Initialize inner tree
+        parentTree->inner = (vptree *) malloc(sizeof(vptree));      // FREEMEM
+        parentTree->inner->inner = NULL;
+        parentTree->inner->outer = NULL;
+        parentTree->inner->start = parentTree->start;
+        parentTree->inner->stop = numberOfPoints / 2 - 1 + parentTree->start;
+//    parentTree->inner->vpPoint = parentTree->vpPoint;
+
+        buildVPTree(
+                parentTree->inner,
+                points,
+                distances,
+                dimension,
+                parentTree->inner->stop - parentTree->inner->start + 1,
+                k_neighbours
+        );
+
+        // Initialize outer tree
+        parentTree->outer = (vptree *) malloc(sizeof(vptree));      // FREEMEM
+        parentTree->outer->inner = NULL;
+        parentTree->outer->outer = NULL;
+        parentTree->outer->start = numberOfPoints / 2 + parentTree->start;
+        parentTree->outer->stop = parentTree->stop;
 //    parentTree->outer->vpPoint = parentTree->vpPoint;
 
-    buildVPTree(
-            parentTree->outer,
-            points,
-            distances,
-            dimension,
-            parentTree->outer->stop - parentTree->outer->start + 1
-    );
+        buildVPTree(
+                parentTree->outer,
+                points,
+                distances,
+                dimension,
+                parentTree->outer->stop - parentTree->outer->start + 1,
+                k_neighbours
+        );
+    }
 }
 
 
@@ -99,25 +121,25 @@ void knn_mpi_search(int k, double **nearest, double **points, int64_t numberOfPo
     // The array points is sorted according to the sort of the array distances. So, when it is
     // given as an argument the first k points of it are the nearest to the chosen point
     if(k < numberOfPoints) {
-        printf("\nThe nearest are: \n");
+        //printf("\nThe nearest are: \n");
         for (int i = 0; i < k; ++i) {
             for (int j = 0; j < dimension; ++j) {
                 nearest[i][j] = points[i + 1][j];
-                printf("%.1f ", nearest[i][j]);
+                //printf("%.1f ", nearest[i][j]);
             }
-            printf("\n");
+            //printf("\n");
         }
     }
     else if(k == numberOfPoints || k > numberOfPoints){
-        printf("\nThe nearest are: \n");
+        //printf("\nThe nearest are: \n");
         for (int i = 0; i < k; ++i) {
             for (int j = 0; j < dimension; ++j) {
                 if( i == numberOfPoints - 1)        // The points array has no more elements
                     break;
                 nearest[i][j] = points[i + 1][j];
-                printf("%.1f ", nearest[i][j]);
+                //printf("%.1f ", nearest[i][j]);
             }
-            printf("\n");
+            //printf("\n");
         }
     }
 }

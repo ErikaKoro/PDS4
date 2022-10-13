@@ -13,7 +13,7 @@ add_executable(PDS4
         src/sequential/sequential_vptree.h
         src/timer.c)
 
-add_executable(
+add_executable(data
         src/Data/main.c)
 
 add_executable(CILK
@@ -27,6 +27,7 @@ target_link_libraries(CILK -fopencilk)
 add_executable(KNN2
         src/quick_select.c
         src/quick_select.h
+        src/timer.c
         src/knn/KNNSearch.c)
 
 add_executable(MPI

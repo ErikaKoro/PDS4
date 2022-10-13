@@ -44,10 +44,12 @@ void calculateMasterKNN(KNN perPivot, const double *pivot, int rank, int size, i
 
     findDistance(distancesPerProc, holdPoints, dimension, initial.vpPoint, pointsPerProc);
 
-    buildVPTree(&initial, holdPoints, distancesPerProc, dimension, pointsPerProc);      // FREEMEM(CHECK)
+    buildVPTree(&initial, holdPoints, distancesPerProc, dimension, pointsPerProc, k_neighbours);      // FREEMEM(CHECK)
 
     freeMpiMemory(initial.inner);
-    freeMpiMemory(initial.outer);
+    if(initial.outer != NULL) {
+        freeMpiMemory(initial.outer);
+    }
     free(initial.vpPoint);
     free(distancesPerProc);
 
@@ -119,7 +121,7 @@ void calculateMasterKNN(KNN perPivot, const double *pivot, int rank, int size, i
             }
         }
 
-        free(recvbuffer);
+//        free(recvbuffer);
         free(elements);
     }
 

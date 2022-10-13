@@ -52,14 +52,13 @@ void mpi_test_function(double **points, int pointsPerProc, int dimension, double
 
         MPI_Recv(&prevMax, 1, MPI_DOUBLE, rank - 1, 50, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-        if (prevMax < maxDist) {
+        if (prevMax <= maxDist) {
             printf("Rank: %d SUCCESS\n", rank - 1);
             printf("Rank: %d SUCCESS\n", rank);
         } else {
             printf("Rank: %d FAILURE\n", rank - 1);
 
         }
-
 
     } else {
         double prevMax;
@@ -72,7 +71,7 @@ void mpi_test_function(double **points, int pointsPerProc, int dimension, double
         MPI_Wait(&request_1, NULL);
         MPI_Wait(&request_2, NULL);
 
-        if (prevMax < maxDist) {
+        if (prevMax <= maxDist) {
             printf("Rank: %d SUCCESS\n", rank - 1);
         } else {
             printf("Rank: %d FAILURE\n", rank - 1);
@@ -176,108 +175,6 @@ int main(int argc, char **argv) {
 
         double *pivot = (double *) calloc(dimension, sizeof(double));
 
-        /*for (int l = 0; l < size; l++) {
-            if (l == rank) {
-                // Select pivot
-                for (int i = 0; i < pointsPerProc; ++i) {
-
-
-                    printf("The pivot is: ");
-                    for (int j = 0; j < dimension; j++) {
-                        pivot[j] = holdThePoints[i][j];
-                        printf("%.1f ", pivot[j]);
-                    }
-
-
-                }
-            }
-
-            int k_neighbours = atoi(argv[2]);
-            if (k_neighbours > numberOfPoints)
-                k_neighbours = (int) numberOfPoints;
-
-            if (rank == l) {
-                start = MPI_Wtime();
-            }
-            //Broadcast the pivot to the processes
-            MPI_Bcast(pivot, (int) dimension, MPI_DOUBLE, l, MPI_COMM_WORLD);
-
-            distributeByMedian(pivot,
-                               0,
-                               rank,
-                               (int) dimension,
-                               holdThePoints,
-                               (int) pointsPerProc,
-                               size,
-                               MPI_COMM_WORLD
-            );
-
-            if (rank == l) {
-                end = MPI_Wtime();
-                printf("The time is: %.4f\n", end - start);
-            }
-
-            mpi_test_function(holdThePoints, (int) pointsPerProc, (int) dimension, pivot);
-
-            KNN *totalNearest;
-            if (l == rank) {
-                totalNearest = (KNN *) malloc(numberOfPoints * sizeof(double));  // FREEMEM
-
-                for (int i = 0; i < numberOfPoints; ++i) {
-
-                    // for each point, each totalNearest array has k points
-                    totalNearest[i].nearest = (double **) malloc(sizeof(double *) * k_neighbours);
-
-                    for (int j = 0; j < k_neighbours; ++j) {
-                        totalNearest[i].nearest[j] = (double *) malloc(sizeof(double) * dimension);
-                    }
-                }
-                calculateMasterKNN(totalNearest[0],
-                                   pivot,
-                                   rank,
-                                   size,
-                                   pointsPerProc,
-                                   holdThePoints,
-                                   dimension,
-                                   k_neighbours
-                );
-            }
-
-            calculateSlaveKNN(pivot, rank, size, pointsPerProc, holdThePoints, dimension, k_neighbours);
-
-            if (rank == l) {
-                printf("\nThe nearest points are:\n");
-                for (int i = 0; i < k_neighbours; ++i) {
-                    for (int j = 0; j < dimension; ++j) {
-                        printf("%.1f ", totalNearest->nearest[i][j]);
-                    }
-                    printf("\n");
-                }
-
-                for (int m = 0; m < numberOfPoints; ++m) {
-                    for (int n = 0; n < k_neighbours; ++n) {
-                        free(totalNearest[m].nearest[n]);
-                    }
-                }
-
-                for (int m = 0; m < numberOfPoints; ++m) {
-                    free(totalNearest[m].nearest);
-                }
-                free(totalNearest);
-
-            }
-
-
-            for (int i = 0; i < pointsPerProc; ++i) {
-                free(holdThePoints[i]);
-            }
-            free(holdThePoints);
-
-            MPI_Barrier(MPI_COMM_WORLD);
-
-            free(pivot);
-        }*/
-
         int k_neighbours = atoi(argv[2]);
 
         if(k_neighbours > numberOfPoints)
@@ -290,21 +187,37 @@ int main(int argc, char **argv) {
 
         deepCopyArray(holdThePoints, copied, pointsPerProc, dimension);
 
-        for (int l = 0; l < numberOfPoints; ++l) {
+        KNN *totalNearest;
 
-            if(rank == l / pointsPerProc){
+        if (rank == 0) {
+            start = MPI_Wtime();
+
+
+            totalNearest = (KNN *) malloc(numberOfPoints * sizeof(double));  // FREEMEM
+
+            for (int i = 0; i < numberOfPoints; ++i) {
+
+                // for each point, each totalNearest array has k points
+                totalNearest[i].nearest = (double **) malloc(sizeof(double *) * k_neighbours);
+
+                for (int j = 0; j < k_neighbours; ++j) {
+                    totalNearest[i].nearest[j] = (double *) malloc(sizeof(double) * dimension);
+                }
+            }
+        }
+
+
+        for(int l = 0; l < numberOfPoints; l++) {
+
+            if (rank == l / pointsPerProc) {
                 for (int j = 0; j < dimension; ++j) {
                     pivot[j] = copied[l % pointsPerProc][j];
                 }
-//                printf("\nThe rank is %d\n", l / (int)pointsPerProc);
+                //printf("\nThe rank is %d\n", l / (int) pointsPerProc);
             }
 
             //Broadcast the pivot to the processes
-            MPI_Bcast(pivot, (int) dimension, MPI_DOUBLE, l / (int)pointsPerProc, MPI_COMM_WORLD);
-
-            if (rank == 0) {
-                start = MPI_Wtime();
-            }
+            MPI_Bcast(pivot, (int) dimension, MPI_DOUBLE, l / (int) pointsPerProc, MPI_COMM_WORLD);
 
             distributeByMedian(pivot,
                                0,
@@ -316,11 +229,40 @@ int main(int argc, char **argv) {
                                MPI_COMM_WORLD
             );
 
+
+            //mpi_test_function(holdThePoints, (int) pointsPerProc, (int) dimension, pivot);
+
+
             if (rank == 0) {
-                end = MPI_Wtime();
-                printf("The time is: %.4f\n", end - start);
+                calculateMasterKNN(totalNearest[l], pivot, rank, size, pointsPerProc, holdThePoints, dimension,
+                                   k_neighbours);
+            } else {
+                calculateSlaveKNN(pivot, rank, size, pointsPerProc, holdThePoints, dimension, k_neighbours);
             }
 
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+/*        for (int l = 0; l < numberOfPoints; ++l) {
+
+            if(rank == l / pointsPerProc){
+                for (int j = 0; j < dimension; ++j) {
+                    pivot[j] = copied[l % pointsPerProc][j];
+                }
+//                printf("\nThe rank is %d\n", l / (int)pointsPerProc);
+            }
+
+            //Broadcast the pivot to the processes
+            MPI_Bcast(pivot, (int) dimension, MPI_DOUBLE, l / (int)pointsPerProc, MPI_COMM_WORLD);
+
+            distributeByMedian(pivot,
+                               0,
+                               rank,
+                               (int) dimension,
+                               holdThePoints,
+                               (int) pointsPerProc,
+                               size,
+                               MPI_COMM_WORLD
+            );
 
             mpi_test_function(holdThePoints, (int) pointsPerProc, (int) dimension, pivot);
 
@@ -337,10 +279,12 @@ int main(int argc, char **argv) {
                         totalNearest[i].nearest[j] = (double *) malloc(sizeof(double) * dimension);
                     }
                 }
-                calculateMasterKNN(totalNearest[0], pivot, rank, size, pointsPerProc, holdThePoints, dimension, k_neighbours);
+                calculateMasterKNN(totalNearest[l], pivot, rank, size, pointsPerProc, holdThePoints, dimension, k_neighbours);
+            }else {
+                calculateSlaveKNN(pivot, rank, size, pointsPerProc, holdThePoints, dimension, k_neighbours);
             }
 
-            calculateSlaveKNN(pivot, rank, size, pointsPerProc, holdThePoints, dimension, k_neighbours);
+            MPI_Barrier(MPI_COMM_WORLD);
 
             if(rank == 0){
                 for (int k = 0; k < numberOfPoints; ++k) {
@@ -354,8 +298,33 @@ int main(int argc, char **argv) {
                 }
                 free(totalNearest);
             }
+        }*/
 
-            MPI_Barrier(MPI_COMM_WORLD);
+        if (rank == 0) {
+            /*for (int k = 0; k < numberOfPoints; ++k) {
+                printf("\nNeighbours of %d point\n", k);
+                for (int j = 0; j < k_neighbours; ++j) {
+                    for (int l = 0; l < dimension; l++) {
+                        printf("%.1f ", totalNearest[k].nearest[j][l]);
+                    }
+                    printf("\n");
+                }
+            }*/
+            for (int k = 0; k < numberOfPoints; ++k) {
+                for (int j = 0; j < k_neighbours; ++j) {
+                    free(totalNearest[k].nearest[j]);
+                }
+            }
+
+            for (int i = 0; i < numberOfPoints; ++i) {
+                free(totalNearest[i].nearest);
+            }
+            free(totalNearest);
+        }
+
+        if (rank == 0) {
+            end = MPI_Wtime();
+            printf("The time is: %.5f\n", end - start);
         }
 
         for (int i = 0; i < pointsPerProc; ++i) {

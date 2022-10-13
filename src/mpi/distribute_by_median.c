@@ -213,14 +213,6 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
 
     // Termination condition
     if(worldSize == 2) {
-
-//
-//
-//        // In the end of the recursion each process with rank < worldSize / 2 have points with distances from the pivot < median
-//        // and the processes with ranks > worldSize / 2 have points with distances from the pivot > median
-//        //So, the sequential function buildVPTree is called for each process in order to sort its points
-
-
         return;
     }
 
