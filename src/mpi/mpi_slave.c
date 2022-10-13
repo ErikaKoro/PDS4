@@ -4,6 +4,7 @@
 #include <string.h>
 #include <mpi.h>
 
+
 void calculateSlaveKNN(const double *pivot, int rank, int size, int64_t pointsPerProc, double **holdPoints, int64_t dimension, int k_neighbours){
     if (rank * pointsPerProc < k_neighbours) {
         double *sendPoints;
@@ -26,13 +27,6 @@ void calculateSlaveKNN(const double *pivot, int rank, int size, int64_t pointsPe
         findDistance(distancesPerProc, holdPoints, dimension, initial.vpPoint, pointsPerProc);
 
         buildVPTree(&initial, holdPoints, distancesPerProc, dimension, pointsPerProc, k_neighbours);      // FREEMEM(CHECK)
-
-        freeMpiMemory(initial.inner);
-        if(initial.outer != NULL) {
-            freeMpiMemory(initial.outer);
-        }
-        free(distancesPerProc);
-
 
         if ((rank + 1) * pointsPerProc <= k_neighbours) {
 
@@ -60,10 +54,11 @@ void calculateSlaveKNN(const double *pivot, int rank, int size, int64_t pointsPe
             MPI_Send(sendPoints, (int) (pointsToGive * dimension), MPI_DOUBLE, 0, 12, MPI_COMM_WORLD);
         }
 
-        free(initial.vpPoint);
         free(sendPoints);
-    }
-    else{
-        return;
+
+        freeMpiMemory(initial.inner);
+        freeMpiMemory(initial.outer);
+        free(distancesPerProc);
+        free(initial.vpPoint);
     }
 }

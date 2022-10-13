@@ -11,6 +11,16 @@
 #include "distribute_by_median.h"
 
 
+void printArray(double **points, int64_t elements, int64_t dimension){
+    for (int i = 0; i < elements; ++i) {
+        for (int j = 0; j < dimension; ++j) {
+            printf("%.1f ", points[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+
 /**
  * check if the processes with ranks between 0 and worldSize(exclusive) have distances bigger than the biggest distance they received from the previous process(sorted processes)
  * so as to know if the processes in the end have the right points
@@ -28,7 +38,7 @@ void mpi_test_function(double **points, int pointsPerProc, int dimension, double
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
 
-    double *dist = (double *) malloc(pointsPerProc * sizeof (double));
+    double *dist = (double *) calloc(pointsPerProc, sizeof (double));
 
     findMPIDistances(rank, dist, points, dimension, pivot, pointsPerProc);
 
@@ -53,8 +63,8 @@ void mpi_test_function(double **points, int pointsPerProc, int dimension, double
         MPI_Recv(&prevMax, 1, MPI_DOUBLE, rank - 1, 50, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
         if (prevMax <= maxDist) {
-            printf("Rank: %d SUCCESS\n", rank - 1);
-            printf("Rank: %d SUCCESS\n", rank);
+//            printf("Rank: %d SUCCESS\n", rank - 1);
+//            printf("Rank: %d SUCCESS\n", rank);
         } else {
             printf("Rank: %d FAILURE\n", rank - 1);
 
@@ -72,7 +82,7 @@ void mpi_test_function(double **points, int pointsPerProc, int dimension, double
         MPI_Wait(&request_2, NULL);
 
         if (prevMax <= maxDist) {
-            printf("Rank: %d SUCCESS\n", rank - 1);
+//            printf("Rank: %d SUCCESS\n", rank - 1);
         } else {
             printf("Rank: %d FAILURE\n", rank - 1);
 
@@ -81,14 +91,6 @@ void mpi_test_function(double **points, int pointsPerProc, int dimension, double
     free(dist);
 }
 
-void printArray(double **points, int64_t elements, int64_t dimension){
-    for (int i = 0; i < elements; ++i) {
-        for (int j = 0; j < dimension; ++j) {
-            printf("%.1f ", points[i][j]);
-        }
-        printf("\n");
-    }
-}
 
 bool isPowerOfTwo(int64_t number){
     return (ceil(log2((double)number)) == floor(log2((double)number)));
@@ -130,10 +132,12 @@ int main(int argc, char **argv) {
     int64_t numberOfPoints;
     int64_t dimension;
     int64_t pointsPerProc;
-    double **holdThePoints;
+
 
     FILE *fh = fopen(argv[1], "rb");
     if (fh != NULL) {
+        double **holdThePoints;
+
         fread(&dimension, sizeof(int64_t), 1, fh);
         fread(&numberOfPoints, sizeof(int64_t), 1, fh);
 
@@ -213,7 +217,7 @@ int main(int argc, char **argv) {
                 for (int j = 0; j < dimension; ++j) {
                     pivot[j] = copied[l % pointsPerProc][j];
                 }
-                //printf("\nThe rank is %d\n", l / (int) pointsPerProc);
+//                printf("\nThe rank is %d\n", l / (int) pointsPerProc);
             }
 
             //Broadcast the pivot to the processes
@@ -229,8 +233,7 @@ int main(int argc, char **argv) {
                                MPI_COMM_WORLD
             );
 
-
-            //mpi_test_function(holdThePoints, (int) pointsPerProc, (int) dimension, pivot);
+            mpi_test_function(holdThePoints, (int) pointsPerProc, (int) dimension, pivot);
 
 
             if (rank == 0) {
@@ -329,9 +332,12 @@ int main(int argc, char **argv) {
 
         for (int i = 0; i < pointsPerProc; ++i) {
             free(holdThePoints[i]);
+            free(copied[i]);
         }
 
+        free(copied);
         free(holdThePoints);
+
         free(pivot);
         MPI_Finalize();
 

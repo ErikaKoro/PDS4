@@ -144,12 +144,9 @@ int *findExchanges(int rank, int *counterReceiver, int worldSize, int master, MP
         *numberOfExchanges = helperIndex[0];  // The length of the array for the infos of the rank master
 
         free(helperIndex);
-
-        // TODO possible snake
-        for (int i = 1; i < worldSize; i++) {
+        for (int i = 1; i < worldSize; ++i) {
             free(info[i]);
         }
-
         return info[0];
 
     } else {

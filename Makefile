@@ -113,7 +113,7 @@ build_data: $(BUILD_DIR)/data.out
 run_data: $(BUILD_DIR)/data.out
 	@echo
 	@echo
-	@$(BUILD_DIR)/data.out 40 8192 ./src/Data/data
+	@$(BUILD_DIR)/data.out 10 16384 ./src/Data/data
 	@echo
 	@echo
 
@@ -129,7 +129,7 @@ build_knn: $(BUILD_DIR)/knn.out
 run_knn: $(BUILD_DIR)/knn.out
 	@echo
 	@echo
-	@$(BUILD_DIR)/knn.out ./src/Data/data 4096
+	@$(BUILD_DIR)/knn.out ./src/Data/data 32
 	@echo
 	@echo
 
@@ -137,7 +137,7 @@ build_mpi: $(MPI_BUILD_DIR)/mpi.out
 run_mpi: $(MPI_BUILD_DIR)/mpi.out
 	@echo
 	@echo
-	@mpirun -hostfile hosts $(MPI_BUILD_DIR)/mpi.out ./src/Data/data 4096
+	@mpirun -hostfile hosts $(MPI_BUILD_DIR)/mpi.out ./src/Data/data 4
 	@echo
 	@echo
 
@@ -145,7 +145,7 @@ run_mpi: $(MPI_BUILD_DIR)/mpi.out
 valgrind_mpi: $(MPI_BUILD_DIR)/mpi.out
 	@echo
 	@echo
-	@mpirun -np 2 valgrind --leak-check=full --suppressions=./openmpi-valgrind.supp $(MPI_BUILD_DIR)/mpi.out ./src/Data/data 5
+	@mpirun -hostfile hosts valgrind --track-origins=yes --leak-check=full --suppressions=openmpi-valgrind.supp $(MPI_BUILD_DIR)/mpi.out ./src/Data/data 5
 	@echo
 	@echo
 

@@ -24,60 +24,37 @@ void buildVPTree(vptree *parentTree, double **points, double *distances, int64_t
     // In findMedian we sort the array of points according to the sort of distances.
     parentTree->median = findMedian(points + parentTree->start, distances + parentTree->start, numberOfPoints);
 
-    if(k_neighbours < numberOfPoints / 2) {
-        // Initialize inner tree
-        parentTree->inner = (vptree *) malloc(sizeof(vptree));      // FREEMEM
-        parentTree->inner->inner = NULL;
-        parentTree->inner->outer = NULL;
-        parentTree->inner->start = parentTree->start;
-        parentTree->inner->stop = numberOfPoints / 2 - 1 + parentTree->start;
-//    parentTree->inner->vpPoint = parentTree->vpPoint;
+    // Initialize inner tree
+    parentTree->inner = (vptree *) malloc(sizeof(vptree));      // FREEMEM
+    parentTree->inner->inner = NULL;
+    parentTree->inner->outer = NULL;
+    parentTree->inner->start = parentTree->start;
+    parentTree->inner->stop = numberOfPoints / 2 - 1 + parentTree->start;
 
-        buildVPTree(
-                parentTree->inner,
-                points,
-                distances,
-                dimension,
-                parentTree->inner->stop - parentTree->inner->start + 1,
-                k_neighbours
-        );
+    buildVPTree(
+            parentTree->inner,
+            points,
+            distances,
+            dimension,
+            parentTree->inner->stop - parentTree->inner->start + 1,
+            k_neighbours
+    );
 
-    }else {
+    // Initialize outer tree
+    parentTree->outer = (vptree *) malloc(sizeof(vptree));      // FREEMEM
+    parentTree->outer->inner = NULL;
+    parentTree->outer->outer = NULL;
+    parentTree->outer->start = numberOfPoints / 2 + parentTree->start;
+    parentTree->outer->stop = parentTree->stop;
 
-        // Initialize inner tree
-        parentTree->inner = (vptree *) malloc(sizeof(vptree));      // FREEMEM
-        parentTree->inner->inner = NULL;
-        parentTree->inner->outer = NULL;
-        parentTree->inner->start = parentTree->start;
-        parentTree->inner->stop = numberOfPoints / 2 - 1 + parentTree->start;
-//    parentTree->inner->vpPoint = parentTree->vpPoint;
-
-        buildVPTree(
-                parentTree->inner,
-                points,
-                distances,
-                dimension,
-                parentTree->inner->stop - parentTree->inner->start + 1,
-                k_neighbours
-        );
-
-        // Initialize outer tree
-        parentTree->outer = (vptree *) malloc(sizeof(vptree));      // FREEMEM
-        parentTree->outer->inner = NULL;
-        parentTree->outer->outer = NULL;
-        parentTree->outer->start = numberOfPoints / 2 + parentTree->start;
-        parentTree->outer->stop = parentTree->stop;
-//    parentTree->outer->vpPoint = parentTree->vpPoint;
-
-        buildVPTree(
-                parentTree->outer,
-                points,
-                distances,
-                dimension,
-                parentTree->outer->stop - parentTree->outer->start + 1,
-                k_neighbours
-        );
-    }
+    buildVPTree(
+            parentTree->outer,
+            points,
+            distances,
+            dimension,
+            parentTree->outer->stop - parentTree->outer->start + 1,
+            k_neighbours
+    );
 }
 
 
@@ -106,7 +83,6 @@ void freeMpiMemory(vptree *tree) {
     if(tree->inner == NULL && tree->outer == NULL) {        // If the tree's leaves are empty
         free(tree);
     }
-
 }
 
 /**

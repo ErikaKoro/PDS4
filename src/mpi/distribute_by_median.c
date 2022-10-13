@@ -6,7 +6,6 @@
 #include "distribute_by_median.h"
 
 
-
 /**
  * Finds the distance of each element, per process, from the pivot
  *
@@ -130,9 +129,6 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
     // Sort the array holdPoints by holding in the first indexes the points that will remain in the process and in the last indexes the ones that will be exchanged
     int counter = partitionByMedian(worldSize, rank, holdPoints, pointsPerProc, distance, median);
 
-    free(distance);
-    if(rank == master)
-        free(receiver);
 
 //    printf("The counter with rank %d is %d\n", rank, counter);
 
@@ -157,8 +153,6 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
     // That's why we call it with this condition
     exchangePerProcess = findExchanges(rank, counterReceiver, worldSize, master, communicator,&numberOfExchanges);
 
-    if(rank == master)
-        free(counterReceiver);
 
 
     /// ----------------------------------------------------------EXCHANGES------------------------------------------------------
@@ -194,8 +188,6 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
     for (int j = 0; j < numberOfExchanges / 2; j++) {
         MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
     }
-    free(exchangePerProcess);
-    free(sendPoints);
 
 
     //Update the new holdPoints array
@@ -205,9 +197,15 @@ void distributeByMedian(double *pivot,int master, int rank, int dimension, doubl
         }
     }
 
+    if(rank == master){
+        free(receiver);
+        free(counterReceiver);
+    }
+    free(distance);
+    free(exchangePerProcess);
+    free(sendPoints);
     free(recvBuffer);
-
-
+    free(requests);
     /// --------------------------------------------- Recursive call ---------------------------------------------
 
 
