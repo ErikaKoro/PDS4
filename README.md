@@ -92,7 +92,6 @@ IMPORTANT! The path to the openCilk clang binary should be updated in the Makefi
 ├── .gitignore          
 ├── CMakeLists.txt          # Cmake build script for Clion
 ├── Makefile                # Makefile for linux base distros
-├── README.md
 └── hosts                   # file that defines number of slots for MPI
 
 ```
