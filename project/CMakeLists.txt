@@ -20,7 +20,7 @@ add_executable(CILK
         src/quick_select.c
         src/quick_select.h
         src/cilk/cilk_vptree.c
-        src/timer.c)
+        src/timer.c src/cilk/cilk_vptree.h)
 
 target_link_libraries(CILK -fopencilk)
 

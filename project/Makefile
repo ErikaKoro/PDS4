@@ -43,7 +43,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CC_FLAGS := $(INC_FLAGS) -O3 -g
 MPI_FLAGS := $(INC_FLAGS) -O3 -g -lm
-CILK_FLAGS := $(INC_FLAGS) -O3 -fopencilk -g # -fsanitize=cilk -Og -g
+CILK_FLAGS := $(INC_FLAGS) -O3 -fopencilk # -fsanitize=cilk -Og -g
 
 all: build_sequential build_mpi build_cilk
 
@@ -113,7 +113,7 @@ build_data: $(BUILD_DIR)/data.out
 run_data: $(BUILD_DIR)/data.out
 	@echo
 	@echo
-	@$(BUILD_DIR)/data.out 100 8192 ./src/Data/data
+	@$(BUILD_DIR)/data.out 10 4194304 ./src/Data/data
 	@echo
 	@echo
 
@@ -153,7 +153,7 @@ build_cilk: $(CILK_BUILD_DIR)/cilk.out
 run_cilk: $(CILK_BUILD_DIR)/cilk.out
 	@echo
 	@echo
-	@$(CILK_BUILD_DIR)/cilk.out ./src/Data/data 5
+	@CILK_NWORKERS=16 $(CILK_BUILD_DIR)/cilk.out ./src/Data/data
 	@echo
 	@echo
 

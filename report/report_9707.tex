@@ -9,6 +9,14 @@
 \exhyphenpenalty 10000
 \pgfplotsset{compat = newest}
 
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=blue,
+    citecolor=blue,
+    pdftitle={Pthreads and openCilk systems},
+}
 
 \title{\quad Parallel and distributed Systems 
         \newline 4th assignment}
@@ -37,7 +45,7 @@
 
     \section*{Experiments}
     
-    The experiments were executed in an AMD Ryzen 7 5800H, 3200.000 MHz.
+    The experiments were executed in an AMD Ryzen 7 5800H, 8 cores/ 16 threads, 3200.000 MHz.
     and the results are based on the number of points and dimension of the dataset and the 
     number of searching neighbours is a power-of-two value with k = 2\textsuperscript{[1:8]}. 
 
@@ -45,10 +53,10 @@
     \section*{Observations}
 
     First of all, by keeping stable the dimension and the number of processes (optimal=16) and increasing the
-    number of points causes averagely 5 times slower KNN algortihm than MPI. Secondly, keeping the number of
+    number of points it causes 5 times slower KNN algortihm than MPI on average. Secondly, keeping the number of
     points, the dimension and the processes stable and increasing the number of k-nearest neighbours keeps MPI's
     execution time constant.Meanwhile, increasing the number of k increases KNN sequential's execution time. Also,
-    by increasing the number of dimension caused 2-times slower performance in MPI. At last, as it is expected by raising the number of processes from 2 to 16 is observed the optimized
+    increasing the number of dimension by a factor of two, caused 2-times slower performance in MPI. At last, as it is expected by raising the number of processes from 2 to 16 is observed the optimized
     performance, a number that can be predicted by the number of available cores. 
 
     \section*{Plots}
@@ -159,7 +167,7 @@
     \begin{tikzpicture}
         \begin{axis}[
             title style={anchor=north,yshift=10pt},
-            title = {$Number\ of\ dimension\ -\ time$},
+            title = {$Dimension\ -\ time$},
             xlabel = {$Number\ of\ dimension$},
             ylabel = {$execution\ time\ (s)$},
             axis y line*=left,
@@ -170,7 +178,7 @@
             ytick={0, 62, 124, 186, 248, 310},
             width = \textwidth,
             height = 0.6\textwidth,
-            legend style={draw=none}
+            legend style={draw=none,at={(0.5,0.9)}, anchor=north east}
         ]
 
         \addplot[
@@ -179,9 +187,7 @@
         ] table [x=x, y=y]{/home/erika/Git/PDS4/report/mpiVSdimesion};
         \addlegendentry{MPI KNN}
         \addlegendimage{empty legend}
-        \addlegendentry{dim=100
-        Npoints=8192
-        proc=16}
+        \addlegendentry{Npoints=8192 proc=16}
         \end{axis}
     \end{tikzpicture}
 
@@ -189,11 +195,11 @@
 
 \vspace{5mm} %5mm vertical space
 
-    \section*{Conclusion}
-
-    In conclusion, needs to be marked the contribution of Message Passing Interface
-    in solving problems efficiently regarding the memory and the execution time. Using all the available
-    cores, optimizes the performance for any number of points and changing the number of neighbours(k) does not
-    affect the performance. 
+\section*{Problems encountered}
+Initially, the most important issue I faced was debbuging the MPI code amd eliminating the memory leaks in order to give a 
+bigger dataset but MPI's memory leaks filled my memory. Another problem I encountered, was trying to parallelize the sequential construction
+of VP tree by using the OpenCilk library but the execution time was equal to the sequential's. I also tried to give it a threshold size 
+which optimized the parallel code for number of points / 4 and then the sequential code was executed. The reason why OpenCilk did not achieve
+better performance than the serial code was due to the workload per thread although the CILK WORKERS were set at the number of cores.    
 
 \end{document}

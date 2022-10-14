@@ -180,14 +180,14 @@ int main(int argc, char **argv){
     // Calculate the distances from the chosen pivot
     findDistance(distances, holdThePoints, dimension, initial.vpPoint, numberOfPoints);
     stopTimer(&timer);
-    printf("Distance elapsed time:\n");
+    printf("\nDistance elapsed time:\n");
     displayElapsed(&timer);
 
 
     startTimer(&timer);
     buildVPTree(&initial, holdThePoints, distances, dimension, numberOfPoints);
     stopTimer(&timer);
-    printf("Distance elapsed time:\n");
+    printf("\nConstruction elapsed time:\n");
     displayElapsed(&timer);
     printf("The median distance is: %.2f ", initial.median);
 
