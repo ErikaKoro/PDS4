@@ -1,0 +1,199 @@
+\documentclass[12pt, a4paper]{report}
+\usepackage{pgfplots}
+\usepackage[utf8]{inputenc}
+\usepackage{hyphenat}
+\usepackage{indentfirst}
+\usepackage{hyperref}
+
+\hyphenpenalty 10000
+\exhyphenpenalty 10000
+\pgfplotsset{compat = newest}
+
+
+\title{\quad Parallel and distributed Systems 
+        \newline 4th assignment}
+\author{Erika Koro}
+\date{October 13, 2022}
+
+
+
+\begin{document}
+
+    \maketitle
+
+    \newpage 
+    \section*{Objective}
+
+    The objective of this assignment is to calculate the K-Nearest neighbours for all points of 
+    a dataset. Specifically, in the first serial source code is constructed the vantage point
+    tree which sequentially is used in the KNN algortihm. In the KNNSearch the construction of the
+    VP Tree per point is used in order to sort the array with the points, according to their median distance
+    from the pivot and chooses the first-k elements as neighbours.
+    In order to parallelize this algorithm, MPI specification for C is used to optimize performance
+    and give a distributed solution. The code for this assignment can be found
+    in \href{https://github.com/ErikaKoro/PDS4}{here}.
+
+
+
+    \section*{Experiments}
+    
+    The experiments were executed in an AMD Ryzen 7 5800H, 3200.000 MHz.
+    and the results are based on the number of points and dimension of the dataset and the 
+    number of searching neighbours is a power-of-two value with k = 2\textsuperscript{[1:8]}. 
+
+
+    \section*{Observations}
+
+    First of all, by keeping stable the dimension and the number of processes (optimal=16) and increasing the
+    number of points causes averagely 5 times slower KNN algortihm than MPI. Secondly, keeping the number of
+    points, the dimension and the processes stable and increasing the number of k-nearest neighbours keeps MPI's
+    execution time constant.Meanwhile, increasing the number of k increases KNN sequential's execution time. Also,
+    by increasing the number of dimension caused 2-times slower performance in MPI. At last, as it is expected by raising the number of processes from 2 to 16 is observed the optimized
+    performance, a number that can be predicted by the number of available cores. 
+
+    \section*{Plots}
+
+    \begin{center}
+    \begin{tikzpicture}
+        \begin{axis}[
+            title style={anchor=north,yshift=10pt},
+            title = {$Number\ of\ points\ -\ time$},
+            xlabel = {$Number\ of\ points$},
+            ylabel = {$execution\ time\ (s)$},
+            axis y line*=left,
+            axis x line*=bottom,
+            xmin = 0, xmax =  9000,
+            ymin = 0, ymax = 140,
+            xtick={0, 2000, 4000, 6000, 8000},
+            ytick={0, 20, 40, 60, 80, 100, 120, 140},
+            width = \textwidth,
+            height = 0.6\textwidth,
+            legend style={draw=none}
+        ]
+
+        \addplot[
+            magenta,
+            mark = *
+        ] table [x=x, y=y]{MPI_NPOINTS};
+        \addlegendentry{MPI KNN}
+        
+        \addplot[
+            blue,
+            mark = *
+        ] table [x=x, y=y]{MPIvsKNN};
+        \addlegendentry{sequential KNN}
+        \addlegendimage{empty legend}
+        \end{axis}
+    \end{tikzpicture}
+\end{center}
+
+    \vspace{5mm} %5mm vertical space
+
+    \begin{center}
+    \begin{tikzpicture}
+        \begin{axis}[
+            title style={anchor=north,yshift=10pt},
+            title = {$Number\ of\ neighbours\ -\ time$},
+            xlabel = {$Number\ of\ neighbours$},
+            ylabel = {$execution\ time\ (s)$},
+            axis y line*=left,
+            axis x line*=bottom,
+            xmin = 0, xmax =  300,
+            ymin = 0, ymax = 50,
+            xtick={0, 50, 100, 150, 200, 250, 300},
+            ytick={0, 10, 20, 30, 40, 50},
+            width = \textwidth,
+            height = 0.6\textwidth,
+            legend style={draw=none}
+        ]
+
+        \addplot[
+            magenta,
+            mark = *
+        ] table [x=x, y=y]{MPI_NEIGHBOURS};
+        \addlegendentry{MPI KNN}
+        \addlegendimage{empty legend}
+        \addlegendentry{dim=100
+        proc=16
+        NP=8192}
+        \end{axis}
+    \end{tikzpicture}
+\end{center}
+
+\vspace{5mm} %5mm vertical space
+
+\begin{center}
+    \begin{tikzpicture}
+        \begin{axis}[
+            title style={anchor=north,yshift=10pt},
+            title = {$Number\ of\ processors\ -\ time$},
+            xlabel = {$Number\ of\ processors$},
+            ylabel = {$execution\ time\ (s)$},
+            axis y line*=left,
+            axis x line*=bottom,
+            xmin = 0, xmax =  16,
+            ymin = 0, ymax = 60,
+            xtick={0, 2, 4, 6, 8, 10, 12, 14, 16},
+            ytick={0, 10, 20, 30, 40, 50, 60},
+            width = \textwidth,
+            height = 0.6\textwidth,
+            legend style={draw=none}
+        ]
+
+        \addplot[
+            magenta,
+            mark = *
+        ] table [x=x, y=y]{mpiVSprocesses};
+        \addlegendentry{MPI KNN}
+        \addlegendimage{empty legend}
+        \addlegendentry{Npoints=8192
+        dim=16
+        K=16}
+        \end{axis}
+    \end{tikzpicture}
+\end{center}
+
+\vspace{5mm} %5mm vertical space
+
+\begin{center}
+    \begin{tikzpicture}
+        \begin{axis}[
+            title style={anchor=north,yshift=10pt},
+            title = {$Number\ of\ dimension\ -\ time$},
+            xlabel = {$Number\ of\ dimension$},
+            ylabel = {$execution\ time\ (s)$},
+            axis y line*=left,
+            axis x line*=bottom,
+            xmin = 0, xmax =  524,
+            ymin = 0, ymax = 310,
+            xtick={0, 104, 208, 312, 416, 524},
+            ytick={0, 62, 124, 186, 248, 310},
+            width = \textwidth,
+            height = 0.6\textwidth,
+            legend style={draw=none}
+        ]
+
+        \addplot[
+            magenta,
+            mark = *
+        ] table [x=x, y=y]{/home/erika/Git/PDS4/report/mpiVSdimesion};
+        \addlegendentry{MPI KNN}
+        \addlegendimage{empty legend}
+        \addlegendentry{dim=100
+        Npoints=8192
+        proc=16}
+        \end{axis}
+    \end{tikzpicture}
+
+\end{center}
+
+\vspace{5mm} %5mm vertical space
+
+    \section*{Conclusion}
+
+    In conclusion, needs to be marked the contribution of Message Passing Interface
+    in solving problems efficiently regarding the memory and the execution time. Using all the available
+    cores, optimizes the performance for any number of points and changing the number of neighbours(k) does not
+    affect the performance. 
+
+\end{document}
