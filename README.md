@@ -78,7 +78,7 @@ IMPORTANT! The path to the openCilk clang binary should be updated in the Makefi
 ### 4.1. PDS4
 
 ```
-.PDS4
+.PDS4/project
 ├── src                     main code
 |   ├── Data                # dataset creation related source files
 |   ├── CILK                # OpenCilk related source files
