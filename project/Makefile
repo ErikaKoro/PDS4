@@ -113,7 +113,7 @@ build_data: $(BUILD_DIR)/data.out
 run_data: $(BUILD_DIR)/data.out
 	@echo
 	@echo
-	@$(BUILD_DIR)/data.out 10 4194304 ./src/Data/data
+	@$(BUILD_DIR)/data.out 10 10000 ./src/Data/data
 	@echo
 	@echo
 

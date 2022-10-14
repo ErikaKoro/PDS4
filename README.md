@@ -99,9 +99,10 @@ IMPORTANT! The path to the openCilk clang binary should be updated in the Makefi
 <br/>
 
 ## 5. Compile and run
+`ATTENTION!` Run `make run_data` to create the dataset. The default dimension is 10 and the number of points 10,000.
 
 ### 5.1. Sequential
-Simply run `make run_sequential` in the [*PDS4*](PDS4) directory in order to run the executable for sequential code that creates the vantage point tree. The executable files will be created in the `BUILD_DIR` directory along with the `object` files.
+Simply run `make run_sequential` in the [*PDS4/project*](PDS4/project) directory in order to run the executable for sequential code that creates the vantage point tree. The executable files will be created in the `BUILD_DIR` directory along with the `object` files.
 
 ### 5.2. OpenCilk
 Run `make run_cilk` in order to run the executable for the OpenCilk parallelized code.
